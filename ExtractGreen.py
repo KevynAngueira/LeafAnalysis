@@ -34,8 +34,8 @@ def extractGreen(target_image, rectangle_hsv_thresholds, leaf_hsv_thresholds, re
     total_leaf_pixels = cv2.countNonZero(refined_leaf_mask)
     total_background_pixels = cv2.countNonZero(background_mask)
 
-    print(f"Total Leaf Pixels: {total_leaf_pixels}")
-    print(f"Total Background Pixels: {total_background_pixels}")
+    #print(f"Total Leaf Pixels: {total_leaf_pixels}")
+    #print(f"Total Background Pixels: {total_background_pixels}")
 
     # Calculate leaf area
     total_target_pixels = total_leaf_pixels + total_background_pixels
@@ -49,9 +49,9 @@ def extractGreen(target_image, rectangle_hsv_thresholds, leaf_hsv_thresholds, re
         target_pixel_ratio = 0
         leaf_area = 0
 
-    print(f"Total Pixels: {total_target_pixels}")
-    print(f"Total Area: {total_target_area}")
-    print(f"Pixel Ratio: {target_pixel_ratio}")
+    #print(f"Total Pixels: {total_target_pixels}")
+    #print(f"Total Area: {total_target_area}")
+    #print(f"Pixel Ratio: {target_pixel_ratio}")
     print(f"Leaf Area: {leaf_area}")
 
     # Display results

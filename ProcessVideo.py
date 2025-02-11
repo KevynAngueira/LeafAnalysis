@@ -4,6 +4,8 @@ from CropAndRotate import cropAndRotate
 from DetectRectangle import detectRectangle
 from ExtractGreen import extractGreen
 from Helper.ResizeForDisplay import resize_for_display
+from FeatureTracker import FeatureTracker
+from LeafSegmentStitcher import LeafSegmentStitcher
 
 
 class VideoDetection:
@@ -106,6 +108,8 @@ class VideoDetection:
         Processes a video frame by frame to detect and extract leaf area.
         If output_path is provided, saves the processed frames as a video.
         """
+        #featureTracker = FeatureTracker() #TODO
+        leafStitcher = LeafSegmentStitcher()
 
         cap = cv2.VideoCapture(video_path)
 
@@ -140,6 +144,9 @@ class VideoDetection:
                 resized_result = cv2.resize(result, (frame_width, frame_height))
                 display_result = resize_for_display(resized_result)
                 cv2.imshow("Processed Frame", display_result)
+
+                #featureTracker.track_features(resized_result)
+                leafStitcher.check_overlap(resized_result)
 
                 # Write frame to output video if saving
                 if output_path:
