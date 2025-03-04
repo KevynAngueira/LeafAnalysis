@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 from CropAndRotate import cropAndRotate
@@ -5,12 +6,12 @@ from DetectRectangle import detectRectangle
 from ExtractGreen import extractGreen
 from Helper.ResizeForDisplay import resize_for_display
 from FeatureTracker import FeatureTracker
-from LeafSegmentStitcher import LeafSegmentStitcher
+from OrbStitcher import LeafSegmentStitcher
 
 
 class VideoDetection:
     def __init__(self, tool_hsv_thresholds, leaf_hsv_thresholds, target_dimensions, 
-        move_threshold=0, large_move_threshold=50, confirm_frames=10, lost_frames=5,
+        move_threshold=0, large_move_threshold=25, confirm_frames=20, lost_frames=5,
     ):
         self.tool_hsv_thresholds = tool_hsv_thresholds
         self.leaf_hsv_thresholds = leaf_hsv_thresholds
@@ -108,8 +109,8 @@ class VideoDetection:
         Processes a video frame by frame to detect and extract leaf area.
         If output_path is provided, saves the processed frames as a video.
         """
-        #featureTracker = FeatureTracker() #TODO
-        leafStitcher = LeafSegmentStitcher()
+        #featureTracker = FeatureTracker()
+        #leafStitcher = LeafSegmentStitcher()
 
         cap = cv2.VideoCapture(video_path)
 
@@ -146,11 +147,17 @@ class VideoDetection:
                 cv2.imshow("Processed Frame", display_result)
 
                 #featureTracker.track_features(resized_result)
-                leafStitcher.check_overlap(resized_result)
+                #leafStitcher.check_overlap(resized_result)
 
+                if frame_count <= 200:
+                    if frame_count % 10 == 0:
+                        frame_path = os.path.join("LeafSegments/Test", f"leaf_segment_{frame_count}.png")
+                        cv2.imwrite(frame_path, resized_result)
                 # Write frame to output video if saving
                 if output_path:
                     out.write(resized_result)
+
+            frame_count +=1
 
             # Press 'q' to stop early
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -163,10 +170,10 @@ class VideoDetection:
 
 
 if __name__ == "__main__":
-
-    video_path = "TestImages/demonstration.mp4"
-    #output_path = "TestImages/cropped_output.mp4"
-    output_path = None
+    video_folder = "demonstration0"
+    video_path = f"TestVideos/{video_folder}.mp4"
+    output_path = f"TestVideos/{video_folder}/leaf_output.mp4"
+    #output_path = None
 
     # Define tool and leaf adaptive hsv mask
     orange_hsv_thresholds = (np.array([2, 115, -1]), np.array([12, 255, 255]))

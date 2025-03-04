@@ -6,11 +6,14 @@ def calculateArea(image_path, target_dimensions):
 
     h, w, _ = image.shape
     target_h, target_w = target_dimensions
+    print(h)
 
     total_image_pixels =  h * w
+    print(total_image_pixels)
 
     non_black_mask = np.any(image > 0, axis=-1)
     non_black_pixels = np.count_nonzero(non_black_mask)
+    print(non_black_pixels)
     
     non_black_ratio = non_black_pixels / total_image_pixels
     print(non_black_ratio)
@@ -21,7 +24,6 @@ def calculateArea(image_path, target_dimensions):
     non_black_area = non_black_ratio * target_area
 
     return non_black_area
-    
 
 image_path = "LeafSegments/stitched_leaf_CCORR.png"
 target_dimensions = (1, 6.5)
