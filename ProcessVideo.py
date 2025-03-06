@@ -176,7 +176,7 @@ if __name__ == "__main__":
     #output_path = None
 
     # Define tool and leaf adaptive hsv mask
-    orange_hsv_thresholds = (np.array([2, 115, -1]), np.array([12, 255, 255]))
+    orange_hsv_thresholds = (np.array([2, 115, 0]), np.array([12, 255, 255]))
     leaf_hsv_thresholds = (np.array([35, 23, 0]), np.array([100, 255, 215]))
     # Define target area dimensions
     target_dimensions = (6.5, 1)

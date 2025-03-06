@@ -11,7 +11,7 @@ def nothing(x):
     pass
 
 # Load image
-image = cv2.imread("cropped_output.jpg")
+image = cv2.imread("TestImages/leaf_image1.jpg")
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
 # Create a window
