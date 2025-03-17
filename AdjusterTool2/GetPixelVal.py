@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 
-from Helper.NormalizeBrightness import normalizeBrightness
-
 def resize_for_display(image, max_width=1000, max_height=800):
     """ Resize image while maintaining aspect ratio for display. """
     height, width = image.shape[:2]
@@ -13,9 +11,8 @@ def nothing(x):
     pass
 
 # Load image
-image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Images/Leaf/Results/Leaf2.jpg")
+image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Images/Leaf/Results/Leaf1.jpg")
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-hsv = normalizeBrightness(hsv)
 
 # Create a window
 cv2.namedWindow("Trackbars")
