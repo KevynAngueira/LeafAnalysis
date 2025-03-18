@@ -1,20 +1,34 @@
 import cv2
 import numpy as np
+from dataclasses import dataclass
 
 from Scripts.HSVMask import HSVMask
 from Scripts.ResizeForDisplay import resize_for_display
 
-class LeafSeparator:
-    def __init__(self,
-        leaf_bounds=(np.array([75, 0, 0]), np.array([175, 255, 255])),
-        target_dimensions=(650, 100)
-    ):
-        self.leaf_bounds = leaf_bounds
-        self.target_dimensions = target_dimensions
+@dataclass
+class LeafSeparatorConfig:
+    leaf_bounds: tuple = (np.array([75, 0, 0]), np.array([175, 255, 255]))
+    target_dimensions: tuple = (650, 100)
+    border_margin: int = 30
+    kernel_size: tuple = (3, 3)
+    morph_iterations: int = 2
+    blur: tuple = (3, 3)
 
-        self.leafMask = HSVMask(leaf_bounds)
+class LeafSeparator:
+    def __init__(self, config: LeafSeparatorConfig=None):
+        if config is None:
+            config = LeafSeparatorConfig()
+
+        self.leaf_bounds = config.leaf_bounds
+        self.target_dimensions = config.target_dimensions
+        self.border_margin = config.border_margin
+        self.kernel_size = config.kernel_size
+        self.morph_iterations = config.morph_iterations
+        self.blur = config.blur
+        
+        self.leafMask = HSVMask(config.leaf_bounds)
     
-    def __crop_using_contours(self, image, border_margin=30, kernel_size=(3,3), morph_iterations=2, blur=(3,3)):
+    def __crop_using_contours(self, image):
         """
         Crop the tool's frontpiece by detecting contours at the edges of the image and cropping to their mean height.
         """
@@ -23,10 +37,13 @@ class LeafSeparator:
         height, width, _ = image.shape
 
         # Remove Noise
-        kernel = np.ones(kernel_size, np.uint8)
-        morphed = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=morph_iterations)
+        if self.morph_iterations > 0:
+            kernel = np.ones(self.kernel_size, np.uint8)
+            morphed = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=self.morph_iterations)
+        else:
+            morphed = image
 
-        blurred = cv2.GaussianBlur(morphed, blur, 0)
+        blurred = cv2.GaussianBlur(morphed, self.blur, 0)
 
         gray = blurred[:, :, 0]
 
@@ -40,13 +57,13 @@ class LeafSeparator:
         for contour in contours:
             for point in contour[:, 0]:  # Extract (x, y) points
                 x, y = point
-                if x <= border_margin:
+                if x <= self.border_margin:
                     left_points.append(x)
-                if x >= width - border_margin:
+                if x >= width - self.border_margin:
                     right_points.append(x)
-                if y <= border_margin:
+                if y <= self.border_margin:
                     top_points.append(y)
-                if y >= height - border_margin:
+                if y >= height - self.border_margin:
                     bottom_points.append(y)
 
         # Compute average values (fallback to original borders if no points found)
@@ -60,7 +77,7 @@ class LeafSeparator:
 
         return cropped_image
 
-    def imagePreprocessing(self, image):
+    def __imagePreprocessing(self, image):
         """
         Applying preprocessing to the image
             Crop Frontpiece -> Crops out remaining frontpiece from view window
@@ -68,21 +85,29 @@ class LeafSeparator:
         """
 
         cropped_image = self.__crop_using_contours(image)
+
         resized_image = cv2.resize(cropped_image, self.target_dimensions)
 
         return resized_image
 
     def Extract(self, image, display=False):
         """
-        Extract the leaf only mask and count the leaf pixels
+        Extract the leaf-only mask, count leaf pixels, and calculate leaf percentage
         """
 
-        preprocessed = self.imagePreprocessing(image)
+        preprocessed = self.__imagePreprocessing(image)
 
         leaf_result, leaf_mask = self.leafMask.applyHSVMask(preprocessed, True)
         leaf_pixels = np.count_nonzero(leaf_mask == 255)
+
+        total_pixels = leaf_mask.size
+        leaf_percentage = (leaf_pixels / total_pixels) * 100
         
         if display:
+            print(f"Leaf Pixels: {leaf_pixels}")
+            print(f"Total Pixels: {total_pixels}")
+            print(f"Leaf Percentage: {leaf_percentage}")
+
             cv2.imshow("Original", resize_for_display(image))
             cv2.imshow("Leaf Mask", resize_for_display(leaf_mask))
             cv2.imshow("Leaf Result", resize_for_display(leaf_result))
@@ -90,4 +115,4 @@ class LeafSeparator:
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
-        return leaf_result, leaf_pixels
+        return leaf_result, leaf_pixels, leaf_percentage

@@ -4,13 +4,18 @@ import numpy as np
 from Scripts.NormalizeBrightness import normalizeBrightness
 
 class HSVMask:
-    def __init__(self, hsv_bounds, sat_threshold=None):
+    def __init__(self, hsv_bounds, sat_threshold=None, low_sat_bounds=None):
         self.hsv_bounds = hsv_bounds
         
         if sat_threshold is None:
             self.sat_threshold = 0
         else:
             self.sat_threshold = sat_threshold
+
+        if low_sat_bounds is None:
+            self.low_sat_bounds = (np.array([0, self.sat_threshold, 0]), np.array([179, 255, 255]))
+        else:
+            self.low_sat_bounds = low_sat_bounds
 
     def __imagePreprocessing(self, image):
         """
@@ -54,13 +59,11 @@ class HSVMask:
             lower_bound, upper_bound = self.hsv_bounds
         else:
             # Apply Saturation Mask
-            lower_bound = np.array([0, self.sat_threshold, 0])
-            upper_bound = np.array([179, 255, 255])
+            lower_bound, upper_bound = self.low_sat_bounds
         
         # Apply Mask, check for if inverted range
         dynamic_mask = cv2.inRange(hsv, lower_bound, upper_bound)
         if invert_range:
-            print("Inverting range")
             dynamic_mask = cv2.bitwise_not(dynamic_mask)
 
         # Overlay on original image

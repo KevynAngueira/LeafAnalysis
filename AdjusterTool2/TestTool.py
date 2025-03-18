@@ -8,7 +8,7 @@ from Scripts.CropAndRotate import cropAndRotate
 from Scripts.ResizeForDisplay import resize_for_display
 
 # Load images from folder
-base_folder = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Images/Leaf" 
+base_folder = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results" 
 image_files = [f for f in os.listdir(base_folder) if os.path.isfile(os.path.join(base_folder, f))]
 
 if image_files is None:
@@ -35,6 +35,11 @@ image = cv2.imread(image_path)
 if image is None:
     print("Error: Could not load image.")
 else:
+    viewWindow = ViewWindow()
+    view_window = viewWindow.Extract(image, True)
+
+
+    """
     # Tool hue mask
     tool_hsv_bounds = (np.array([4, 0, 0]), np.array([172, 255, 255]))
 
@@ -73,3 +78,4 @@ else:
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    """

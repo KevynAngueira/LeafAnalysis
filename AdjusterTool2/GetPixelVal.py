@@ -11,8 +11,15 @@ def nothing(x):
     pass
 
 # Load image
-image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Images/Leaf/Results/Leaf1.jpg")
+image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results/frame_480.jpg")
+#image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Images/Leaf/Leaf2.jpg")
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+mean_saturation = np.mean(hsv[:, :, 1])
+mean_value = np.mean(hsv[:, :, 2])
+
+print(f"Mean Sat: {mean_saturation}")
+print(f"Mean Val: {mean_value}")
 
 # Create a window
 cv2.namedWindow("Trackbars")

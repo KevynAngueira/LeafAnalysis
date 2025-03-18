@@ -5,6 +5,11 @@ def cropAndRotate(image, min_rect):
     """ 
     Rotate image around the rectangle's center and then crop to dimensions.
     """
+
+    if min_rect is None:
+        print("Could not crop and rotate image, invalid rectangle")
+        return image
+
     center, (w, h), angle = min_rect
 
     # Ensure width is always the greater measurement (left-to-right)
