@@ -1,3 +1,6 @@
+# Author: Your Name
+# Created: 2025-03-18 13:34:11
+# Last Modified: 2025-03-18 13:34:11
 import cv2
 import numpy as np
 from dataclasses import dataclass
@@ -7,7 +10,9 @@ from Scripts.ResizeForDisplay import resize_for_display
 
 @dataclass
 class LeafSeparatorConfig:
-    leaf_bounds: tuple = (np.array([75, 0, 0]), np.array([175, 255, 255]))
+    leaf_bounds: tuple = (np.array([96, 0, 98]), np.array([179, 255, 255]))
+    low_sat_leaf_bounds: tuple = (np.array([0, 0, 0]), np.array([85, 255, 255]))
+    sat_threshold: int = 40
     target_dimensions: tuple = (650, 100)
     border_margin: int = 30
     kernel_size: tuple = (3, 3)
@@ -20,13 +25,15 @@ class LeafSeparator:
             config = LeafSeparatorConfig()
 
         self.leaf_bounds = config.leaf_bounds
+        self.low_sat_leaf_bounds = config.low_sat_leaf_bounds
+        self.sat_threshold = config.sat_threshold
         self.target_dimensions = config.target_dimensions
         self.border_margin = config.border_margin
         self.kernel_size = config.kernel_size
         self.morph_iterations = config.morph_iterations
         self.blur = config.blur
         
-        self.leafMask = HSVMask(config.leaf_bounds)
+        self.leafMask = HSVMask(config.leaf_bounds, config.sat_threshold, config.low_sat_leaf_bounds)
     
     def __crop_using_contours(self, image):
         """

@@ -1,3 +1,6 @@
+# Author: Your Name
+# Created: 2025-03-18 13:34:11
+# Last Modified: 2025-03-18 13:34:11
 import cv2
 import numpy as np
 
@@ -11,7 +14,7 @@ def nothing(x):
     pass
 
 # Load image
-image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results/frame_480.jpg")
+image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results/view_480.jpg")
 #image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Images/Leaf/Leaf2.jpg")
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 

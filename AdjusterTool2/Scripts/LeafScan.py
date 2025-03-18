@@ -1,3 +1,6 @@
+# Author: Your Name
+# Created: 2025-03-18 13:34:11
+# Last Modified: 2025-03-18 13:34:11
 import cv2
 import numpy as np
 
@@ -18,6 +21,9 @@ class LeafScan:
         self.leafSeparator = LeafSeparator(leaf_config)
         self.viewWindow = ViewWindow(view_config)
 
+
+
+
     def processFrame(self, frame, frame_count, output_path):
         
         if frame_count > 700 and (frame_count % 20) == 0:
@@ -30,6 +36,11 @@ class LeafScan:
         cv2.imshow("Frame", resize_for_display(frame))
         cv2.imshow("View Window", resize_for_display(view_window))
         cv2.imshow("Leaf Result", resize_for_display(leaf_result))
+
+        # Write frame to output video if saving
+        #if output_path and (frame_count%20)==0:
+        #    cv2.imwrite(f"{output_path}/view_{frame_count}.jpg", view_window)
+
 
     def scanVideo(self, video_path, output_path=None):
         """
@@ -66,9 +77,9 @@ class LeafScan:
             self.processFrame(frame, frame_count, output_path)
 
             # Write frame to output video if saving
-            if output_path and (frame_count%20)==0:
+            #if output_path and (frame_count%20)==0:
                 #out.write(frame)
-                cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
+            #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
 
             frame_count += 1
 

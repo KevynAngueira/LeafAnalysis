@@ -1,3 +1,10 @@
+# Author: Your Name
+# Created: 2025-03-18 13:34:11
+# Last Modified: 2025-03-18 13:34:11
+"""
+@author: Kevyn Angueira Irizarry
+"""
+
 import cv2
 import numpy as np
 
