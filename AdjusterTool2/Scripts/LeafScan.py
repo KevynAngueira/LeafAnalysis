@@ -1,13 +1,17 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18 13:41:12
-# Last Modified: 2025-03-18 13:45:13
+# Last Modified: 2025-03-18 16:13:31
 
 
 import cv2
 import numpy as np
 
 from Scripts.LeafSeparator import LeafSeparator, LeafSeparatorConfig
+from Scripts.StabilizedLeafSeparator import StabilizedLeafSeparator
+
 from Scripts.ViewWindow import ViewWindow, ViewWindowConfig
+from Scripts.StabilizedViewWindow import StabilizedViewWindow
+
 
 from Scripts.ResizeForDisplay import resize_for_display
 
@@ -20,11 +24,11 @@ class LeafScan:
 
         self.target_dimensions = leaf_config.target_dimensions
         
-        self.leafSeparator = LeafSeparator(leaf_config)
+        #self.leafSeparator = LeafSeparator(leaf_config)
+        self.leafSeparator = StabilizedLeafSeparator(leaf_config)
+
         self.viewWindow = ViewWindow(view_config)
-
-
-
+        #self.viewWindow = StabilizedViewWindow(view_config)
 
     def processFrame(self, frame, frame_count, output_path):
         

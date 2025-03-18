@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18 13:41:12
-# Last Modified: 2025-03-18 13:45:13
+# Last Modified: 2025-03-18 16:13:31
 
 
 import cv2
@@ -22,7 +22,7 @@ class HSVMask:
         else:
             self.low_sat_bounds = low_sat_bounds
 
-    def __imagePreprocessing(self, image):
+    def _imagePreprocessing(self, image):
         """
         Applying preprocessing to image
             HSV -> Convert to HSV
@@ -32,7 +32,7 @@ class HSVMask:
         
         return hsv
         
-    def __isColorBackground(self, hsv):
+    def _isColorBackground(self, hsv):
         """
         Determine whether the background is predominantly colored in or black/white
         Uses the mean saturation value of the image as a heuristic
@@ -46,18 +46,19 @@ class HSVMask:
     def applyHSVMask(self, image, invert_range=False, preprocess=True):
         """
         Applies one of the two HSV masks dynamically based on the background type.
-            Colored In Background -> Hue Mask
-            Black/White Background -> Saturation Mask
-        """
-        
+            Colored In Background -> Base Mask
+            Black/White Background -> Low 
+            
+            Saturation Mask
+        """        
         # Apply preprocessing
         if preprocess:
-            hsv = self.__imagePreprocessing(image)
+            hsv = self._imagePreprocessing(image)
         else:
             hsv = image
 
         # Check which mask to use
-        is_color_background = self.__isColorBackground(hsv)
+        is_color_background = self._isColorBackground(hsv)
 
         if is_color_background:
             # Apply Hue Mask

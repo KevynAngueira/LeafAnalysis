@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18 13:41:12
-# Last Modified: 2025-03-18 13:45:13
+# Last Modified: 2025-03-18 16:13:31
 
 
 import cv2
@@ -37,7 +37,7 @@ class LeafSeparator:
         
         self.leafMask = HSVMask(config.leaf_bounds, config.sat_threshold, config.low_sat_leaf_bounds)
     
-    def __crop_using_contours(self, image):
+    def _crop_using_contours(self, image):
         """
         Crop the tool's frontpiece by detecting contours at the edges of the image and cropping to their mean height.
         """
@@ -86,14 +86,14 @@ class LeafSeparator:
 
         return cropped_image
 
-    def __imagePreprocessing(self, image):
+    def _imagePreprocessing(self, image):
         """
         Applying preprocessing to the image
             Crop Frontpiece -> Crops out remaining frontpiece from view window
             Resize -> Resize image View Window to standardized size
         """
 
-        cropped_image = self.__crop_using_contours(image)
+        cropped_image = self._crop_using_contours(image)
 
         resized_image = cv2.resize(cropped_image, self.target_dimensions)
 
@@ -104,7 +104,7 @@ class LeafSeparator:
         Extract the leaf-only mask, count leaf pixels, and calculate leaf percentage
         """
 
-        preprocessed = self.__imagePreprocessing(image)
+        preprocessed = self._imagePreprocessing(image)
 
         leaf_result, leaf_mask = self.leafMask.applyHSVMask(preprocessed, True)
         leaf_pixels = np.count_nonzero(leaf_mask == 255)

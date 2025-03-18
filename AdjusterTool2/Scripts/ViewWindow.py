@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18 13:41:12
-# Last Modified: 2025-03-18 13:45:13
+# Last Modified: 2025-03-18 16:13:31
 
 
 import cv2
@@ -38,7 +38,7 @@ class ViewWindow:
         
         self.toolMask = HSVMask(config.tool_bounds, config.sat_threshold, config.low_sat_tool_bounds)
 
-    def __imagePreprocessing(self, image):
+    def _imagePreprocessing(self, image):
         """
         Applying image preprocessing
             Tool Mask -> Seperates out tool 
@@ -59,7 +59,7 @@ class ViewWindow:
 
         return preprocessed
 
-    def __getContours(self, gray):
+    def _getContours(self, gray):
         """
         Get the contours on the image
         """
@@ -71,7 +71,7 @@ class ViewWindow:
         
         return contours
 
-    def __drawContours(self, image, contours, color=(255,255,0)):
+    def _drawContours(self, image, contours, color=(255,255,0)):
         """
         Draw contours on the given image
         """    
@@ -90,7 +90,7 @@ class ViewWindow:
 
         return drawn_contours
 
-    def __contoursToViewWindow(self, contours, mask, display=False):
+    def _contoursToViewWindow(self, contours, mask, display=False):
         """
         Selects which contour represents the View Window based on the target dimension.
 
@@ -190,17 +190,17 @@ class ViewWindow:
         Extract the view window from the image
         """
 
-        preprocessed = self.__imagePreprocessing(image)
+        preprocessed = self._imagePreprocessing(image)
 
-        contours = self.__getContours(preprocessed)
+        contours = self._getContours(preprocessed)
 
-        target_box, target_rect = self.__contoursToViewWindow(contours, preprocessed, display)
+        target_box, target_rect = self._contoursToViewWindow(contours, preprocessed, display)
 
         view_window = cropAndRotate(image, target_rect)
 
         if display:
-            all_contours = self.__drawContours(image, contours, None)
-            target_countour = self.__drawContours(image, [target_box], (0, 255, 255))
+            all_contours = self._drawContours(image, contours, None)
+            target_countour = self._drawContours(image, [target_box], (0, 255, 255))
 
             cv2.imshow("Original", resize_for_display(image))
             cv2.imshow("Preprocessed", resize_for_display(preprocessed))
