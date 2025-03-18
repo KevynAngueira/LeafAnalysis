@@ -1,3 +1,8 @@
+# Author: Your Name
+# Created: 2025-03-18 13:41:12
+# Last Modified: 2025-03-18 13:41:12
+
+
 import cv2
 import numpy as np
 from DetectRectangle import imagePreprocessing, applyMask
