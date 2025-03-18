@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-03-18 13:41:12
-# Last Modified: 2025-03-18 16:13:31
+# Created: 2025-03-18
+# Last Modified: 2025-03-18
 
 
 import cv2

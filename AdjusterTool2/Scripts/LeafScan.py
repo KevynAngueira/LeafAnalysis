@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-03-18 13:41:12
-# Last Modified: 2025-03-18 16:13:31
+# Created: 2025-03-17
+# Last Modified: 2025-03-18
 
 
 import cv2
@@ -27,8 +27,8 @@ class LeafScan:
         #self.leafSeparator = LeafSeparator(leaf_config)
         self.leafSeparator = StabilizedLeafSeparator(leaf_config)
 
-        self.viewWindow = ViewWindow(view_config)
-        #self.viewWindow = StabilizedViewWindow(view_config)
+        #self.viewWindow = ViewWindow(view_config)
+        self.viewWindow = StabilizedViewWindow(view_config)
 
     def processFrame(self, frame, frame_count, output_path):
         
