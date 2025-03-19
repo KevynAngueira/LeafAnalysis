@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-18
+# Last Modified: 2025-03-19
 
 
 import cv2
@@ -12,36 +12,47 @@ from Scripts.StabilizedLeafSeparator import StabilizedLeafSeparator
 from Scripts.ViewWindow import ViewWindow, ViewWindowConfig
 from Scripts.StabilizedViewWindow import StabilizedViewWindow
 
+from Scripts.SegmentDetector import SegmentDetector
 
 from Scripts.ResizeForDisplay import resize_for_display
 
 class LeafScan:
-    def __init__(self, leaf_config: LeafSeparatorConfig = None, view_config: ViewWindowConfig = None):
-        if leaf_config is None:
-            leaf_config = LeafSeparatorConfig()
+    def __init__(self, view_config: ViewWindowConfig = None, leaf_config: LeafSeparatorConfig = None, output_folder=None):
+        
         if view_config is None:
             view_config = ViewWindowConfig()
-
-        self.target_dimensions = leaf_config.target_dimensions
-        
-        #self.leafSeparator = LeafSeparator(leaf_config)
-        self.leafSeparator = StabilizedLeafSeparator(leaf_config)
+        if leaf_config is None:
+            leaf_config = LeafSeparatorConfig()
 
         #self.viewWindow = ViewWindow(view_config)
         self.viewWindow = StabilizedViewWindow(view_config)
+        
+        #self.leafSeparator = LeafSeparator(leaf_config)
+        self.leafSeparator = StabilizedLeafSeparator(leaf_config)
+        self.target_dimensions = leaf_config.target_dimensions
+
+        self.segmentDetector = SegmentDetector(output_folder)
 
     def processFrame(self, frame, frame_count, output_path):
         
         if frame_count > 700 and (frame_count % 20) == 0:
             view_window = self.viewWindow.Extract(frame, True)
-            leaf_result, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
+            leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
         else:
             view_window = self.viewWindow.Extract(frame)
-            leaf_result, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
+            leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
+            
+            #band, band_mask = self.segmentDetector.extractTemplate(leaf_result, leaf_mask)
+            #drawn_template, max_loc = self.segmentDetector.templateMatching(leaf_result, band, band_mask)
+
+            drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
         
         cv2.imshow("Frame", resize_for_display(frame))
         cv2.imshow("View Window", resize_for_display(view_window))
         cv2.imshow("Leaf Result", resize_for_display(leaf_result))
+        #cv2.imshow("Band", resize_for_display(band))
+        #cv2.imshow("Band Mask", resize_for_display(band_mask))
+        cv2.imshow("Drawn Template", resize_for_display(drawn_template))
 
         return leaf_result
 
@@ -79,8 +90,8 @@ class LeafScan:
             result = self.processFrame(frame, frame_count, output_path)
 
             # Write frame to output video if saving
-            if output_path:
-                out.write(result)
+            #if output_path:
+            #    out.write(result)
             #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
 
             frame_count += 1

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-18
+# Last Modified: 2025-03-19
 
 
 import os
@@ -38,5 +38,5 @@ image = cv2.imread(image_path)
 
 leafSeparator = LeafSeparator()
 
-leaf_result, leaf_pixels = leafSeparator.Extract(image, display=True)
+leaf_result, leaf_mask, leaf_pixels, leaf_percentage = leafSeparator.Extract(image, display=True)
  

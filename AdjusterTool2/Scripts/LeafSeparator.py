@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-18
+# Last Modified: 2025-03-19
 
 
 import cv2
@@ -124,4 +124,4 @@ class LeafSeparator:
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
-        return leaf_result, leaf_pixels, leaf_percentage
+        return leaf_result, leaf_mask, leaf_pixels, leaf_percentage
