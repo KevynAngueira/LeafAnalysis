@@ -43,10 +43,7 @@ class LeafScan:
         cv2.imshow("View Window", resize_for_display(view_window))
         cv2.imshow("Leaf Result", resize_for_display(leaf_result))
 
-        # Write frame to output video if saving
-        #if output_path and (frame_count%20)==0:
-        #    cv2.imwrite(f"{output_path}/view_{frame_count}.jpg", view_window)
-
+        return leaf_result
 
     def scanVideo(self, video_path, output_path=None):
         """
@@ -71,7 +68,6 @@ class LeafScan:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4 format
             out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
-
         frame_count = 0
         while cap.isOpened():
             ret, frame = cap.read()
@@ -80,11 +76,11 @@ class LeafScan:
             if not ret:
                 break  
 
-            self.processFrame(frame, frame_count, output_path)
+            result = self.processFrame(frame, frame_count, output_path)
 
             # Write frame to output video if saving
-            #if output_path and (frame_count%20)==0:
-                #out.write(frame)
+            if output_path:
+                out.write(result)
             #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
 
             frame_count += 1

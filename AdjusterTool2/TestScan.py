@@ -9,8 +9,8 @@ import numpy as np
 
 from Scripts.LeafScan import LeafScan
 
-video_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/vid1.mp4"
-output_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results"
+video_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/vid3.mp4"
+output_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results/vid3.mp4"
 
 leafScan = LeafScan()
 leafScan.scanVideo(video_path, output_path)

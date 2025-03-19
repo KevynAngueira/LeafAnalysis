@@ -7,72 +7,115 @@ import cv2
 import numpy as np
 
 from Scripts.ViewWindow import ViewWindow, ViewWindowConfig
+from Scripts.ResizeForDisplay import resize_for_display
 from Scripts.CropAndRotate import cropAndRotate
 
 class StabilizedViewWindow(ViewWindow):
-    def __init__(self, config: ViewWindowConfig = None, movement_thresholds=(5,10,30), alpha: float = 0.1):
+    def __init__(self, config: ViewWindowConfig = None, movement_threshold=20, alpha: float = 0.1, confirmation_frames=5):
         super().__init__(config)
         
         self.prev_rect = None
         self.prev_center = None
+        self.prev_window = None
 
-        self.frame_lost_count = 0
-        self.frame_skip_count = 0 
-
-        self.movement_thresholds = movement_thresholds
+        self.movement_threshold = movement_threshold
         self.alpha = alpha
+
+        self.move_confirmation_counter = 0 
+        self.lost_confirmation_counter = 0
+
+        self.confirmation_frames = confirmation_frames
 
     def __calculateCenter(self, rect):
         """Calculate the center of the bounding box (minAreaRect)."""
         center = rect[0]  # The center of the bounding box (minAreaRect)
         return np.array(center)
 
+    def __ema(self, prev_value, new_value, alpha):
+        """Exponential Moving Average smoothing function."""
+        return (1 - alpha) * prev_value + alpha * new_value
+    
+    def __smoothDisplacement(self, current_rect, alpha=None):
+
+        if alpha is None:
+            alpha = self.alpha
+
+        stabilized_rect = (
+            tuple(self.__ema(np.array(self.prev_rect[0]), np.array(current_rect[0]), alpha)),  # Smoothed center
+            tuple(self.__ema(np.array(self.prev_rect[1]), np.array(current_rect[1]), alpha)),  # Smoothed size
+            self.__ema(self.prev_rect[2], current_rect[2], alpha)  # Smoothed angle
+        )
+
+        self.prev_rect = stabilized_rect
+        self.prev_center = self.__calculateCenter(stabilized_rect)
+
+        return stabilized_rect
+
     def __stabilizeMovement(self, current_rect):
         """
         Stabilize movement by comparing the current center to the previous center.
         Small changes are ignored, medium changes are accepted, and large changes are checked over multiple frames.
         """
-        
+
         current_center = self.__calculateCenter(current_rect)
 
         if self.prev_center is None:
+            # First frame, initialize values
             self.prev_center = current_center
             self.prev_rect = current_rect
             return current_rect
         
         displacement = np.linalg.norm(current_center - self.prev_center)
 
-        # Define thresholds for small, medium, and large movements
-        small_threshold = self.movement_thresholds[0]
-        medium_threshold = self.movement_thresholds[1]  
-        large_threshold = self.movement_thresholds[2]
+        if displacement < self.movement_threshold:
+            # Small movement → Apply EMA to position, size, and angle
+            stabilized_rect = self.__smoothDisplacement(current_rect)
+            self.move_confirmation_counter = max(self.move_confirmation_counter // 2, 0) 
+            return stabilized_rect
 
-        if displacement < small_threshold:
-            # No significant movement, stabilize by keeping the previous center
-            return self.prev_rect
-        elif displacement < medium_threshold:
-            # Moderate movement, accept the new center
-            self.prev_rect = current_rect
-            self.prev_center = current_center
-            print(f"medium Movemet: {self.prev_center}")
-            return current_rect
         else:
-            # Large movement, check over several frames
-            self.frame_skip_count += 1
-            # If the large movement is confirmed after a few frames, accept the new center
-            if self.frame_skip_count >= 3:
-                print("++++++++++++++++++++++++++++++++++++++++")
-                print(f"LARGE Movemet: {self.prev_center}")
-                print("++++++++++++++++++++++++++++++++++++++++")
-                self.prev_rect = current_rect
-                self.prev_center = current_center
-                self.frame_skip_count = 0
-                return current_rect
+            # Large movement → Require confirmation over multiple frames
+            self.move_confirmation_counter += 1
+            
+            #print(f"Large Movement -> Frame {self.move_confirmation_counter}")
+            
+            if self.move_confirmation_counter >= self.confirmation_frames:
+                # Confirm large movement, then smoothly transition over multiple frames
+                alpha = max(self.alpha * (self.move_confirmation_counter / self.confirmation_frames), 1)
+               
+                # Confirmed large movement, apply EMA
+                stabilized_rect = self.__smoothDisplacement(current_rect, alpha)
+
+                #print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+                #print(f"Applying Large Move: {stabilized_rect}")
+                #print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
+                return stabilized_rect
             else:
-                print(f"Large Movement -- Skip {self.frame_skip_count}")
-                # Skip the large movement for now
+                # Hold previous rect until confirmation
                 return self.prev_rect
         
+    def __handleLostTarget(self):
+        """
+        Handle the target view window is lost.
+        """
+
+        if self.prev_rect is not None:
+            # Lost Target → Require confirmation over multiple frames
+            self.lost_confirmation_counter += 1
+            
+            if self.lost_confirmation_counter >= self.confirmation_frames:
+                # Confirmed target is lost, set view_window to empty
+                self.prev_rect = None
+                self.prev_center = None
+                self.lost_confirmation_counter = 0
+            
+            return self.prev_window
+        else:
+            empty_image = np.zeros((100, 650, 3), dtype=np.uint8)
+            return empty_image
+                
+
     def Extract(self, image, display=False):
         """
         Extract the stabilized view window from the image, based on center displacement.
@@ -85,46 +128,28 @@ class StabilizedViewWindow(ViewWindow):
         target_box, target_rect = self._contoursToViewWindow(contours, preprocessed, display)
 
         if target_box is not None:
-            # Case: Target is found 
-
-            #current_center = self.__calculateCenter(target_rect)
-
-            # Stabilize the movement based on center displacement
+            # Target Found → Stabilize View Window
             stabilized_rect = self.__stabilizeMovement(target_rect)
+            self.lost_confirmation_counter = 0
 
-            # Use the stabilized center to crop and rotate the image
             view_window = cropAndRotate(image, stabilized_rect)
-
-            self.frame_lost_count = 0
-
-            if display:
-                # Draw contours and stabilized view window
-                all_contours = self._drawContours(image, contours, None)
-                target_countour = self._drawContours(image, [target_box], (0, 255, 255))
-
-                cv2.imshow("Original", resize_for_display(image))
-                cv2.imshow("Preprocessed", resize_for_display(preprocessed))
-                cv2.imshow("All Contours", resize_for_display(all_contours))
-                cv2.imshow("Target Contour", resize_for_display(target_countour))
-                cv2.imshow("View Window", resize_for_display(view_window))
-
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-
-            return view_window
-        
-        elif self.prev_rect is not None:
-            # Case: Target is temporarily lost, assume no movement
-            self.frame_lost_count += 1
-            if self.frame_lost_count >= 3:
-                self.prev_rect = None
-                self.prev_center = None
-            prev_window = cropAndRotate(image, self.prev_rect)
-            return prev_window
         else:
-            # Case: Target is unknown
-            empty_image = np.zeros((100, 650, 3), dtype=np.uint8)
-            return empty_image
+            view_window = self.__handleLostTarget()
+        
+        self.prev_window = view_window
 
-            
-            
+        if display:
+            # Draw contours and stabilized view window
+            all_contours = self._drawContours(image, contours, None)
+            target_countour = self._drawContours(image, [target_box], (0, 255, 255))
+
+            cv2.imshow("Original", resize_for_display(image))
+            cv2.imshow("Preprocessed", resize_for_display(preprocessed))
+            cv2.imshow("All Contours", resize_for_display(all_contours))
+            cv2.imshow("Target Contour", resize_for_display(target_countour))
+            cv2.imshow("View Window", resize_for_display(view_window))
+
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        
+        return view_window

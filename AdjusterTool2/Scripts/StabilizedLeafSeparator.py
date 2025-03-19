@@ -24,7 +24,6 @@ class StabilizedLeafSeparator(LeafSeparator):
 
         self.leafMask = SmoothHSVMask(config.leaf_bounds, config.sat_threshold, config.low_sat_leaf_bounds, alpha=alpha_mask)
     
-
     def __smooth_bound(self, prev_value, new_value):
         """Apply exponential moving average (EMA) for smooth transitions."""
         if prev_value is None:
