@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-18
+# Last Modified: 2025-03-20
 
 
 import cv2
@@ -13,7 +13,7 @@ from Scripts.CropAndRotate import cropAndRotate
 
 @dataclass
 class ViewWindowConfig:
-    tool_bounds: tuple = (np.array([0, 0, 0]), np.array([110, 255, 255]))
+    tool_bounds: tuple = (np.array([12, 0, 0]), np.array([165, 255, 255]))
     low_sat_tool_bounds: tuple = (np.array([4, 0, 0]), np.array([172, 255, 255]))
     sat_threshold: int = 40
     target_aspect_ratio: float = 6.5

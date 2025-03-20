@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-19
+# Last Modified: 2025-03-20
 
 
 import cv2
@@ -38,6 +38,8 @@ class LeafScan:
         if frame_count > 700 and (frame_count % 20) == 0:
             view_window = self.viewWindow.Extract(frame, True)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
+
+            drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
         else:
             view_window = self.viewWindow.Extract(frame)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
@@ -88,9 +90,10 @@ class LeafScan:
                 break  
 
             result = self.processFrame(frame, frame_count, output_path)
+            #print(frame_count)
 
             # Write frame to output video if saving
-            #if output_path:
+            #if output_path and frame_count % 20 == 0:
             #    out.write(result)
             #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
 

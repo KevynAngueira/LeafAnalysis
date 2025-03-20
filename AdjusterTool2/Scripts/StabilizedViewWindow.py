@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-18
+# Last Modified: 2025-03-20
 
 
 import cv2
@@ -36,17 +36,34 @@ class StabilizedViewWindow(ViewWindow):
         return (1 - alpha) * prev_value + alpha * new_value
     
     def __smoothDisplacement(self, current_rect, alpha=None):
-
         if alpha is None:
-            alpha = self.alpha
+            alpha = self.alpha      
 
-        stabilized_rect = (
-            tuple(self.__ema(np.array(self.prev_rect[0]), np.array(current_rect[0]), alpha)),  # Smoothed center
-            tuple(self.__ema(np.array(self.prev_rect[1]), np.array(current_rect[1]), alpha)),  # Smoothed size
-            self.__ema(self.prev_rect[2], current_rect[2], alpha)  # Smoothed angle
-        )
+        prev_center, prev_size, prev_angle = self.prev_rect
+        curr_center, curr_size, curr_angle = current_rect
 
-        self.prev_rect = stabilized_rect
+        is_swapped = (curr_angle % 180) >= 90
+
+        if is_swapped:
+            curr_size = curr_size[::-1]
+            curr_angle = (curr_angle % 180) - 90
+
+        smoothed_center = tuple(self.__ema(np.array(prev_center), np.array(curr_center), alpha))
+        smoothed_size = tuple(self.__ema(np.array(prev_size), np.array(curr_size), alpha))
+        smoothed_angle = self.__ema(prev_angle, curr_angle, alpha)
+
+        smoothed_rect = (smoothed_center, smoothed_size, smoothed_angle)
+
+        if is_swapped:
+            swapped_size = smoothed_size[::-1]
+            swapped_angle = smoothed_angle + 90
+        else:
+            swapped_size = smoothed_size
+            swapped_angle = smoothed_angle
+        
+        stabilized_rect = (smoothed_center, swapped_size, swapped_angle)
+
+        self.prev_rect = smoothed_rect
         self.prev_center = self.__calculateCenter(stabilized_rect)
 
         return stabilized_rect
@@ -68,7 +85,8 @@ class StabilizedViewWindow(ViewWindow):
         displacement = np.linalg.norm(current_center - self.prev_center)
 
         if displacement < self.movement_threshold:
-            # Small movement → Apply EMA to position, size, and angle
+            # Small movement → Apply EMA to position, size, and 
+            #print("Small Movement")
             stabilized_rect = self.__smoothDisplacement(current_rect)
             self.move_confirmation_counter = max(self.move_confirmation_counter // 2, 0) 
             return stabilized_rect
@@ -81,7 +99,7 @@ class StabilizedViewWindow(ViewWindow):
             
             if self.move_confirmation_counter >= self.confirmation_frames:
                 # Confirm large movement, then smoothly transition over multiple frames
-                alpha = max(self.alpha * (self.move_confirmation_counter / self.confirmation_frames), 1)
+                alpha = min(self.alpha * (self.move_confirmation_counter / self.confirmation_frames), 0.95)
                
                 # Confirmed large movement, apply EMA
                 stabilized_rect = self.__smoothDisplacement(current_rect, alpha)

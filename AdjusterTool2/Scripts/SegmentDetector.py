@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-19
+# Last Modified: 2025-03-20
 
 import os
 import cv2
@@ -100,8 +100,8 @@ class SegmentDetector:
         self.prev_image = image
         self.prev_mask = mask
 
-        print(displacement)
-        print(self.total_displacement)
+        #print(displacement)
+        #print(self.total_displacement)
 
         return displacement, drawn_template
 
