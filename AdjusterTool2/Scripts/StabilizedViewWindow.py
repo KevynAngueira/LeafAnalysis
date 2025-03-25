@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-20
+# Last Modified: 2025-03-25
 
 
 import cv2
@@ -34,19 +34,31 @@ class StabilizedViewWindow(ViewWindow):
     def __ema(self, prev_value, new_value, alpha):
         """Exponential Moving Average smoothing function."""
         return (1 - alpha) * prev_value + alpha * new_value
+
+    def __normalizeRect(self, rect):
+        center, size, angle = rect
+        if size[0] > size[1]:
+            size = size[::-1]
+            angle = (angle % 180) - 90
+        normed_rect = (center, size, angle)
+        return normed_rect
     
+    def __denormalizeRect(self, rect):
+        center, size, angle = rect
+        if size[0] < size[1]:
+            size = size[::-1]
+            angle += 90
+        denormed_rect = (center, size, angle)
+        return denormed_rect
+
     def __smoothDisplacement(self, current_rect, alpha=None):
         if alpha is None:
             alpha = self.alpha      
 
+        current_rect = self.__normalizeRect(current_rect)
+
         prev_center, prev_size, prev_angle = self.prev_rect
         curr_center, curr_size, curr_angle = current_rect
-
-        is_swapped = (curr_angle % 180) >= 90
-
-        if is_swapped:
-            curr_size = curr_size[::-1]
-            curr_angle = (curr_angle % 180) - 90
 
         smoothed_center = tuple(self.__ema(np.array(prev_center), np.array(curr_center), alpha))
         smoothed_size = tuple(self.__ema(np.array(prev_size), np.array(curr_size), alpha))
@@ -54,14 +66,11 @@ class StabilizedViewWindow(ViewWindow):
 
         smoothed_rect = (smoothed_center, smoothed_size, smoothed_angle)
 
-        if is_swapped:
-            swapped_size = smoothed_size[::-1]
-            swapped_angle = smoothed_angle + 90
-        else:
-            swapped_size = smoothed_size
-            swapped_angle = smoothed_angle
-        
-        stabilized_rect = (smoothed_center, swapped_size, swapped_angle)
+        stabilized_rect = self.__denormalizeRect(smoothed_rect)
+
+        #print(current_rect)
+        #print(smoothed_rect)
+        #print(stabilized_rect)
 
         self.prev_rect = smoothed_rect
         self.prev_center = self.__calculateCenter(stabilized_rect)
@@ -79,7 +88,10 @@ class StabilizedViewWindow(ViewWindow):
         if self.prev_center is None:
             # First frame, initialize values
             self.prev_center = current_center
+            
+            current_rect = self.__normalizeRect(current_rect)
             self.prev_rect = current_rect
+
             return current_rect
         
         displacement = np.linalg.norm(current_center - self.prev_center)

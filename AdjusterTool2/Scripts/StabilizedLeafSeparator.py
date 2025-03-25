@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-18
+# Last Modified: 2025-03-25
 
 
 import cv2
@@ -12,7 +12,7 @@ from Scripts.ResizeForDisplay import resize_for_display
 from Scripts.LeafSeparator import LeafSeparator, LeafSeparatorConfig
 
 class StabilizedLeafSeparator(LeafSeparator):
-    def __init__(self, config: LeafSeparatorConfig=None, alpha_cropping=0.1, alpha_mask=0.4):
+    def __init__(self, config: LeafSeparatorConfig=None, alpha_cropping=0.1, alpha_mask=0.75):
         super().__init__(config)
 
         # Initialize smoothing variables for cropping
@@ -35,7 +35,7 @@ class StabilizedLeafSeparator(LeafSeparator):
         height, width, _ = image.shape
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray, 50, 150)
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         left_points, right_points, top_points, bottom_points = [], [], [], []
         for contour in contours:

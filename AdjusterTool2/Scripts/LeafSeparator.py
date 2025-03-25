@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-19
+# Last Modified: 2025-03-25
 
 
 import cv2
@@ -12,9 +12,9 @@ from Scripts.ResizeForDisplay import resize_for_display
 
 @dataclass
 class LeafSeparatorConfig:
-    leaf_bounds: tuple = (np.array([96, 0, 98]), np.array([179, 255, 255]))
+    leaf_bounds: tuple = (np.array([96, 0, 0]), np.array([179, 255, 255]))
     low_sat_leaf_bounds: tuple = (np.array([0, 0, 0]), np.array([85, 255, 255]))
-    sat_threshold: int = 40
+    sat_threshold: int = None
     target_dimensions: tuple = (650, 100)
     border_margin: int = 30
     kernel_size: tuple = (3, 3)
@@ -57,7 +57,7 @@ class LeafSeparator:
         gray = blurred[:, :, 0]
 
         edges = cv2.Canny(gray, 50, 150)
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Collect edge points
         left_points, right_points = [], []

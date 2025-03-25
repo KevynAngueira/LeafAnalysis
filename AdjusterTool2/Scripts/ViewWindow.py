@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-20
+# Last Modified: 2025-03-25
 
 
 import cv2
@@ -8,16 +8,16 @@ import numpy as np
 from dataclasses import dataclass
 
 from Scripts.HSVMask import HSVMask
+from Scripts.LABMask import LABMask
+
 from Scripts.ResizeForDisplay import resize_for_display
 from Scripts.CropAndRotate import cropAndRotate
 
 @dataclass
 class ViewWindowConfig:
-    tool_bounds: tuple = (np.array([12, 0, 0]), np.array([165, 255, 255]))
-    low_sat_tool_bounds: tuple = (np.array([4, 0, 0]), np.array([172, 255, 255]))
-    sat_threshold: int = 40
+    tool_bounds: tuple = (np.array([165, 130, 85]), np.array([255, 170, 255]))
     target_aspect_ratio: float = 6.5
-    aspect_ratio_tolerance: float = 1.0
+    aspect_ratio_tolerance: float = 0.8
     kernel_size: tuple = (5, 5)
     morph_iterations: int = 2
     blur: tuple = (5, 5)
@@ -28,15 +28,13 @@ class ViewWindow:
             config = ViewWindowConfig()
 
         self.tool_bounds = config.tool_bounds
-        self.low_sat_tool_bounds = config.low_sat_tool_bounds
-        self.sat_threshold = config.sat_threshold
         self.target_aspect_ratio = config.target_aspect_ratio
         self.aspect_ratio_tolerance = config.aspect_ratio_tolerance
         self.kernel_size = config.kernel_size
         self.morph_iterations = config.morph_iterations
         self.blur = config.blur
         
-        self.toolMask = HSVMask(config.tool_bounds, config.sat_threshold, config.low_sat_tool_bounds)
+        self.toolMask = LABMask(config.tool_bounds)
 
     def _imagePreprocessing(self, image):
         """
@@ -47,7 +45,7 @@ class ViewWindow:
         """
 
         # Tool Mask
-        _, preprocessed = self.toolMask.applyHSVMask(image)
+        _, preprocessed = self.toolMask.applyMask(image)
 
         # Morphological Close
         if self.morph_iterations > 0:
@@ -80,11 +78,11 @@ class ViewWindow:
             return (255 - normalized, 0, normalized)  # Blue for small, Red for large
 
         drawn_contours = image.copy()
-        
+
         if color is None:
             for i, c in enumerate(contours):
                 color = get_color(i)
-                cv2.drawContours(drawn_contours, [c], -1, color, 2)        
+                cv2.drawContours(drawn_contours, [c], -1, color, 2)                  
         else:
             cv2.drawContours(drawn_contours, contours, -1, color, 2)
 
@@ -96,7 +94,7 @@ class ViewWindow:
 
         The View Window is:
         (1) The largest contour that matches the target aspect ratio (within tolerance).
-        (2) A contour surrounded by black in the mask.
+        (2) A contour surrounded by white in the mask.
         """
 
         target_rect = None
@@ -120,10 +118,10 @@ class ViewWindow:
                 area = w*h
                 if area > max_area:
                     # Compute expanded bounding box
-                    expanded_box = self.__expandRotatedBox(box, padding=10)
+                    expanded_box = self.__expandRotatedBox(min_rect, padding=20)
 
                     # Check if contour is surrounded by white area
-                    if self.__isSurroundedByBlack(mask, expanded_box, box):
+                    if self.__isSurroundedByWhite(mask, expanded_box, box):
                         max_area = area
                         target_box = box
                         target_rect = min_rect
@@ -138,7 +136,7 @@ class ViewWindow:
     
         return target_box, target_rect
 
-    def __isSurroundedByBlack(self, mask, expanded_box, original_box, white_threshold=0.15):
+    def __isSurroundedByWhite(self, mask, expanded_box, original_box, white_threshold=0.75):
         """
         Checks if a rotated contour (expanded_box) is surrounded by white areas in the mask.
         """
@@ -158,30 +156,38 @@ class ViewWindow:
         # Compute percentage of white pixels in the surrounding area
         white_pixels = np.sum(surrounding_area == 255)
         total_pixels = np.sum(expanded_mask == 255)
-        
+
+        #print(f"White Pixels: {white_pixels}")
+        #print(f"Total Pixels: {total_pixels}")
+
         if total_pixels == 0:
             return False  # Prevent division by zero
 
         white_ratio = white_pixels / total_pixels
-       
-        return white_ratio < white_threshold  # At least 85% black surrounding the contour
 
-    def __expandRotatedBox(self, box, padding=10):
+        #print(f"White Ratio: {white_ratio}")
+
+        return white_ratio > white_threshold  # At least 85% black surrounding the contour
+
+    def __expandRotatedBox(self, rect, padding=20):
         """
         Expands a rotated bounding box outward by a given padding amount.
+        Assumes 'box' is a 4x2 array of points (clockwise or counter-clockwise).
         """
 
-        # Compute the center of the box
-        center = np.mean(box, axis=0)
+        # Unpack the rect
+        (center, (width, height), angle) = rect
 
-        # Compute vectors for the box edges
-        vectors = box - center
+        # Expand width and height
+        expanded_width = width + 2 * padding
+        expanded_height = height + 2 * padding
 
-        # Normalize and scale vectors outward
-        expanded_vectors = vectors * (1 + padding / np.linalg.norm(vectors, axis=1, keepdims=True))
+        # Construct new expanded rect
+        expanded_rect = (center, (expanded_width, expanded_height), angle)
 
-        # Compute new expanded box coordinates
-        expanded_box = np.intp(center + expanded_vectors)
+        # Get corner points of the expanded box
+        expanded_box = cv2.boxPoints(expanded_rect)
+        expanded_box = np.intp(expanded_box) 
 
         return expanded_box
 
@@ -189,7 +195,6 @@ class ViewWindow:
         """
         Extract the view window from the image
         """
-
         preprocessed = self._imagePreprocessing(image)
 
         contours = self._getContours(preprocessed)

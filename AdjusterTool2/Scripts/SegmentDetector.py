@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-20
+# Last Modified: 2025-03-25
 
 import os
 import cv2
@@ -117,7 +117,8 @@ class SegmentDetector:
         displacement, drawn_template = self.trackDisplacement(image, mask)
         self.total_displacement += displacement
 
-        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height
+        # TODO: For some reason displacement is double counted, *2 correction
+        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height * 2
 
         return is_new_segment, drawn_template
 
@@ -128,10 +129,11 @@ class SegmentDetector:
         if is_new_segment:
             self.segment_count += 1
             print(f"Frame {self.segment_count} Detected!")
+
             if self.output_folder is not None:
                 output_path = os.path.join(self.output_folder, f"frame_{self.segment_count}.jpg")
                 cv2.imwrite(output_path, image)
         
-        return drawn_template
+        return is_new_segment, drawn_template
 
 
