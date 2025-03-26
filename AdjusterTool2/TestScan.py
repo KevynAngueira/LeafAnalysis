@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-25
+# Last Modified: 2025-03-26
 
 
 import os
@@ -9,7 +9,7 @@ import numpy as np
 
 from Scripts.LeafScan import LeafScan
 
-video_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/leaf1-1.mp4"
+video_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/leaf1-0.mp4"
 output_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/frames"
 
 segement_folder = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/LeafSegments"

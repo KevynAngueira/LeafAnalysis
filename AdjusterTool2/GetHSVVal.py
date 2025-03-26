@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-02-07
-# Last Modified: 2025-03-20
+# Last Modified: 2025-03-26
 
 
 import cv2
@@ -17,7 +17,7 @@ def nothing(x):
 
 # Load image
 #image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results/view_480.jpg")
-image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/frames/frame_5.jpg")
+image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/frames/frame_320.jpg")
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
 mean_saturation = np.mean(hsv[:, :, 1])

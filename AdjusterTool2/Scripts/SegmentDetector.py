@@ -1,13 +1,16 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-25
+# Last Modified: 2025-03-26
 
 import os
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+
+from Scripts.ResizeForDisplay import resize_for_display
 
 class SegmentDetector:
-    def __init__(self, output_folder=None, segment_height=100, band_height=20, empty_frame_threshold=0.05):
+    def __init__(self, output_folder=None, segment_height=100, band_height=40, empty_frame_threshold=0.02):
         self.output_folder = output_folder
         self.segment_height = segment_height
         self.band_height = band_height
@@ -19,10 +22,42 @@ class SegmentDetector:
         
         self.total_displacement = 0
         self.segment_count = 0
+        self.frame_count = 0
 
         self.prev_image = None
         self.prev_mask = None
         self.prev_max_loc = None
+
+    def _imagePreprocessing(self, image):
+        """
+        Applying image preprocessing 
+            Grayscale -> Convert image to grayscale
+            Mask -> Eliminate non-target areas
+            CLAHE -> Improve local contrast to boost subtle differences
+            Sharpen -> Further instensify differences
+        """
+
+        resized_image = cv2.resize(image, (650, 100))
+
+        # Grayscale -> Convert image to grayscale
+        gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
+
+        # Mask -> Eliminate non-target areas
+        #if mask is not None:
+        #    gray = cv2.bitwise_and(gray, gray, mask=mask)
+
+        # CLAHE -> Improve local contrast to boost subtle differences
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(gray)
+
+        # Sharpen -> Further instensify differences
+        kernel = np.array([[0, -1, 0],
+                           [-1, 5, -1],
+                           [0, -1, 0]])
+        sharpened = cv2.filter2D(enhanced, -1, kernel)
+        sharpened_float = sharpened.astype(np.float32) / 255.0
+
+        return sharpened_float
 
     def __extractTemplate(self, image, mask):
         """
@@ -42,7 +77,8 @@ class SegmentDetector:
         """
 
         # Perform template matching with the mask
-        result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED, mask=template_mask)
+        #result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED, mask=template_mask)
+        result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
         # Find the best match location
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
@@ -50,7 +86,7 @@ class SegmentDetector:
         if self.prev_max_loc is None:
             self.prev_max_loc = max_loc
         else:
-            alpha = 0.7  # Smoothing factor (closer to 1 = more stable, but slower response)
+            alpha = 0  # Smoothing factor (closer to 1 = more stable, but slower response)
             max_loc = (
                 int(alpha * self.prev_max_loc[0] + (1 - alpha) * max_loc[0]),
                 int(alpha * self.prev_max_loc[1] + (1 - alpha) * max_loc[1])
@@ -58,6 +94,7 @@ class SegmentDetector:
             self.prev_max_loc = max_loc  # Store for next frame
 
         drawn_template = image.copy()
+        drawn_template = cv2.cvtColor(drawn_template, cv2.COLOR_GRAY2RGB)
 
         # Draw a rectangle around the best match
         h, w = template.shape[:2]
@@ -67,7 +104,7 @@ class SegmentDetector:
 
         return drawn_template, max_loc
 
-    def __checkEmptyFrame(self, mask):
+    def _checkEmptyFrame(self, mask):
         nonzero_pixels = np.count_nonzero(mask)
         total_pixels = mask.size
         nonzero_ratio = nonzero_pixels / total_pixels
@@ -78,32 +115,34 @@ class SegmentDetector:
         """
         Track the displacement from the last image to the next
         """
-        
-        if self.prev_image is None:
-            self.prev_image = image
+
+        preprocessed = self._imagePreprocessing(image)
+
+        if self.frame_count % 1 == 0:  
+
+            if self.prev_image is None:
+                self.prev_image = preprocessed
+                self.prev_mask = mask
+                return 0, image
+
+            if self._checkEmptyFrame(mask):
+                self.prev_image = preprocessed
+                self.prev_mask = mask
+                return 0, image
+            
+            # Use template tracking to get new location
+            template, template_mask = self.__extractTemplate(self.prev_image, self.prev_mask)
+            drawn_template, max_loc = self.__templateMatching(preprocessed, template, template_mask)
+
+            # Calculate displacement
+            original_y, new_y = self.template_start_y, max_loc[1]
+            displacement = original_y - new_y
+
+            self.prev_image = preprocessed
             self.prev_mask = mask
-            return 0, image
 
-        if self.__checkEmptyFrame(mask):
-            self.prev_image = image
-            self.prev_mask = mask
-            return 0, image
-        
-        # Use template tracking to get new location
-        template, template_mask = self.__extractTemplate(self.prev_image, self.prev_mask)
-        drawn_template, max_loc = self.__templateMatching(image, template, template_mask)
-
-        # Calculate displacement
-        original_y, new_y = self.template_start_y, max_loc[1]
-        displacement = original_y - new_y
-
-        self.prev_image = image
-        self.prev_mask = mask
-
-        #print(displacement)
-        #print(self.total_displacement)
-
-        return displacement, drawn_template
+            return displacement, drawn_template
+        return 0, preprocessed
 
     def checkNewSegment(self, image, mask):
         """
@@ -115,10 +154,16 @@ class SegmentDetector:
         """
 
         displacement, drawn_template = self.trackDisplacement(image, mask)
-        self.total_displacement += displacement
+
+        if displacement > 1:
+            self.total_displacement += displacement
+        self.frame_count += 1
+
+        print(f"displacement: {displacement}")
+        print(f"Total: {self.total_displacement}")
 
         # TODO: For some reason displacement is double counted, *2 correction
-        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height * 2
+        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height
 
         return is_new_segment, drawn_template
 

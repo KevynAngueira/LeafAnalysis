@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-25
+# Last Modified: 2025-03-26
 
 
 import cv2
@@ -12,7 +12,7 @@ from Scripts.ResizeForDisplay import resize_for_display
 
 @dataclass
 class LeafSeparatorConfig:
-    leaf_bounds: tuple = (np.array([96, 0, 0]), np.array([179, 255, 255]))
+    leaf_bounds: tuple = (np.array([100, 0, 0]), np.array([179, 255, 255]))
     low_sat_leaf_bounds: tuple = (np.array([0, 0, 0]), np.array([85, 255, 255]))
     sat_threshold: int = None
     target_dimensions: tuple = (650, 100)

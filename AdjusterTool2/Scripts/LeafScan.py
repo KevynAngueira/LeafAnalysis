@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-25
+# Last Modified: 2025-03-26
 
 
 import cv2
@@ -13,6 +13,7 @@ from Scripts.ViewWindow import ViewWindow, ViewWindowConfig
 from Scripts.StabilizedViewWindow import StabilizedViewWindow
 
 from Scripts.SegmentDetector import SegmentDetector
+from Scripts.PhaseCorrelationDetector import PhaseCorrelationDetector
 
 from Scripts.LeafAreaCalculator import LeafAreaCalculator
 
@@ -34,6 +35,7 @@ class LeafScan:
         self.target_dimensions = leaf_config.target_dimensions
 
         self.segmentDetector = SegmentDetector(output_folder)
+        #self.segmentDetector = PhaseCorrelationDetector(output_folder)
 
         window_dimensions = (self.target_dimensions[0] / 100.0, self.target_dimensions[1] / 100.0)
         self.leafAreaCalculator = LeafAreaCalculator(window_dimensions)
@@ -47,6 +49,7 @@ class LeafScan:
             view_window = self.viewWindow.Extract(frame)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
 
+        #is_new_segment, drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
         is_new_segment, drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
 
         if is_new_segment:
@@ -58,9 +61,8 @@ class LeafScan:
         cv2.imshow("Leaf Result", resize_for_display(leaf_mask))
         cv2.imshow("Drawn Template", resize_for_display(drawn_template))
 
-        if output_path and frame_count % 5 == 0:
-            cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
-
+        #if output_path and frame_count % 5 == 0:
+        #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", view_window)
 
         return leaf_result
 
