@@ -3,8 +3,6 @@
 # Last Modified: 2025-03-26
 
 
-
-
 import os
 import shutil
 from datetime import datetime
@@ -40,15 +38,13 @@ def select_media_file():
         print("No media files found in the NewMedia folder.")
         return None
 
-    print("
-Select a media file from the NewMedia folder:")
+    print("Select a media file from the NewMedia folder:")
     for i, file in enumerate(media_files, 1):
         print(f"{i}. {file.name}")
 
     while True:
         try:
-            choice = int(input("
-Enter the number corresponding to your choice: "))
+            choice = int(input("Enter the number corresponding to your choice: "))
             if 1 <= choice <= len(media_files):
                 return media_files[choice - 1]
             else:
@@ -119,8 +115,7 @@ def organize_and_copy(media_path, leaf_id, def_percent):
     with open(dest_json_path, "w") as f:
         json.dump(metadata, f, indent=4)
 
-    print(f"
-✅ File copied to: {dest_media_path}")
+    print(f"✅ File copied to: {dest_media_path}")
     print(f"📄 Metadata saved to: {dest_json_path}")
 
 def main():
