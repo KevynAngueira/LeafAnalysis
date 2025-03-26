@@ -42,10 +42,6 @@ class SegmentDetector:
         # Grayscale -> Convert image to grayscale
         gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
 
-        # Mask -> Eliminate non-target areas
-        #if mask is not None:
-        #    gray = cv2.bitwise_and(gray, gray, mask=mask)
-
         # CLAHE -> Improve local contrast to boost subtle differences
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(gray)
@@ -59,7 +55,7 @@ class SegmentDetector:
 
         return sharpened_float
 
-    def __extractTemplate(self, image, mask):
+    def __extractTemplate(self, image):
         """
         Extracts a template from the image. 
         The template is a horizontal band from the center of the image.
@@ -67,32 +63,21 @@ class SegmentDetector:
 
         # Extract the band from image and mask
         band = image[self.template_start_y:self.template_end_y, :]
-        band_mask = mask[self.template_start_y:self.template_end_y, :]
 
-        return band, band_mask
+        return band
 
-    def __templateMatching(self, image, template, template_mask):
+    def __templateMatching(self, image, template):
         """
-        Perform template matching based on the template and template_mask
+        Perform template matching based on the template
         """
 
         # Perform template matching with the mask
-        #result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED, mask=template_mask)
         result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
         # Find the best match location
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
-        if self.prev_max_loc is None:
-            self.prev_max_loc = max_loc
-        else:
-            alpha = 0  # Smoothing factor (closer to 1 = more stable, but slower response)
-            max_loc = (
-                int(alpha * self.prev_max_loc[0] + (1 - alpha) * max_loc[0]),
-                int(alpha * self.prev_max_loc[1] + (1 - alpha) * max_loc[1])
-            )
-            self.prev_max_loc = max_loc  # Store for next frame
-
+        self.prev_max_loc = max_loc
+        
         drawn_template = image.copy()
         drawn_template = cv2.cvtColor(drawn_template, cv2.COLOR_GRAY2RGB)
 
@@ -122,24 +107,21 @@ class SegmentDetector:
 
             if self.prev_image is None:
                 self.prev_image = preprocessed
-                self.prev_mask = mask
                 return 0, image
 
             if self._checkEmptyFrame(mask):
                 self.prev_image = preprocessed
-                self.prev_mask = mask
                 return 0, image
             
             # Use template tracking to get new location
-            template, template_mask = self.__extractTemplate(self.prev_image, self.prev_mask)
-            drawn_template, max_loc = self.__templateMatching(preprocessed, template, template_mask)
+            template = self.__extractTemplate(self.prev_image)
+            drawn_template, max_loc = self.__templateMatching(preprocessed, template)
 
             # Calculate displacement
             original_y, new_y = self.template_start_y, max_loc[1]
             displacement = original_y - new_y
 
             self.prev_image = preprocessed
-            self.prev_mask = mask
 
             return displacement, drawn_template
         return 0, preprocessed
