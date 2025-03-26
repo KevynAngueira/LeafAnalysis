@@ -141,8 +141,8 @@ class SegmentDetector:
             self.total_displacement += displacement
         self.frame_count += 1
 
-        print(f"displacement: {displacement}")
-        print(f"Total: {self.total_displacement}")
+        #print(f"displacement: {displacement}")
+        #print(f"Total: {self.total_displacement}")
 
         # TODO: For some reason displacement is double counted, *2 correction
         is_new_segment = self.total_displacement >= self.segment_count * self.segment_height

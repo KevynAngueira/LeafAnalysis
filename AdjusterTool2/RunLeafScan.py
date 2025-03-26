@@ -24,8 +24,7 @@ def prompt_selection(prompt_msg, options):
         print(f"{i+1}: {opt}")
     while True:
         try:
-            choice = int(input("
-Select a number: ")) - 1
+            choice = int(input("Select a number: ")) - 1
             if 0 <= choice < len(options):
                 return options[choice]
         except ValueError:
@@ -86,8 +85,7 @@ def main():
         folder.mkdir(parents=True, exist_ok=True)
         clear_folder(folder)
 
-    print(f"
-▶️ Running LeafScan on: {video_path}")
+    print(f"▶️ Running LeafScan on: {video_path}")
     print(f"📁 Segment output to: {segment_folder}")
     print(f"📁 Analysis output to: {output_folder}")
 

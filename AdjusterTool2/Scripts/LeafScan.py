@@ -98,7 +98,7 @@ class LeafScan:
                 break  
 
             result = self.processFrame(frame, frame_count, output_path)
-            print(frame_count)
+            #print(frame_count)
 
             # Write frame to output video if saving
             #if output_path and frame_count % 20 == 0:

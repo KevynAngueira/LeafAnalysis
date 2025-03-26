@@ -2,7 +2,6 @@
 # Created: 2025-03-26
 # Last Modified: 2025-03-26
 
-
 import os
 import shutil
 from datetime import datetime
@@ -19,13 +18,13 @@ def get_next_leaf_id():
         for folder in BASE_DIR.glob("*")
         if folder.is_dir() and folder.name.isdigit()
     ]
-    return str(max(existing_ids) + 1).zfill(3) if existing_ids else "001"
+    return str(max(existing_ids) + 1).zfill(3) if existing_ids else "000"
 
 def get_next_media_id(folder, media_type):
     existing = [
         f.name for f in folder.glob(f"*_{media_type}-*.json")
     ]
-    return str(len(existing) + 1).zfill(2)
+    return str(len(existing)).zfill(2)
 
 def list_files_in_directory(directory):
     files = [f for f in directory.iterdir() if f.is_file()]
@@ -58,20 +57,32 @@ def sanitize_inputs():
     if not media_path:
         return None, None, None
 
+    # Prompt for defoliation status (0 = healthy, 1 = defoliated)
+    defoliation_status_input = input("Enter defoliation status (0 = healthy, 1 = defoliated): ").strip()
+    while defoliation_status_input not in ['0', '1']:
+        defoliation_status_input = input("Invalid input. Enter 0 for healthy or 1 for defoliated: ").strip()
+
+    defoliation_status = int(defoliation_status_input)
+
+    # Set defoliation percentage
+    if defoliation_status == 0:
+        def_percent = 0  # Healthy, no defoliation
+    else:
+        def_percent_input = input("Enter defoliation percentage (0-100): ").strip()
+        while not def_percent_input.isdigit() or not (0 <= int(def_percent_input) <= 100):
+            def_percent_input = input("Invalid input. Enter defoliation percentage as a number between 1 and 100: ").strip()
+        def_percent = int(def_percent_input)
+
+    # Get or auto-generate the leaf ID
     leaf_id = input("Enter leaf ID (leave blank for auto): ").strip()
     if not leaf_id:
         leaf_id = get_next_leaf_id()
     else:
         leaf_id = leaf_id.zfill(3)
 
-    def_percent_input = input("Enter defoliation percentage (0 = healthy): ").strip()
-    while not def_percent_input.isdigit():
-        def_percent_input = input("Invalid input. Enter defoliation percentage as a number: ").strip()
-    def_percent = int(def_percent_input)
+    return media_path, leaf_id, defoliation_status, def_percent
 
-    return media_path, leaf_id, def_percent
-
-def organize_and_copy(media_path, leaf_id, def_percent):
+def organize_and_move(media_path, leaf_id, def_status, def_percent):
     file_ext = Path(media_path).suffix.lower()
     mime_type, _ = mimetypes.guess_type(media_path)
 
@@ -82,7 +93,7 @@ def organize_and_copy(media_path, leaf_id, def_percent):
     is_video = mime_type.startswith("video")
     media_type = "vid" if is_video else "img"
     file_type_folder = "videos" if is_video else "images"
-    status = "healthy" if def_percent == 0 else "defoliated"
+    status = "healthy" if def_status == 0 else "defoliated"
     
     # Create full directory path
     full_path = BASE_DIR / leaf_id / status / file_type_folder
@@ -99,8 +110,8 @@ def organize_and_copy(media_path, leaf_id, def_percent):
     dest_media_path = full_path / media_filename
     dest_json_path = full_path / json_filename
 
-    # Copy media file
-    shutil.copy2(media_path, dest_media_path)
+    # Move the media file
+    shutil.move(media_path, dest_media_path)
 
     # Create JSON metadata
     metadata = {
@@ -115,13 +126,13 @@ def organize_and_copy(media_path, leaf_id, def_percent):
     with open(dest_json_path, "w") as f:
         json.dump(metadata, f, indent=4)
 
-    print(f"✅ File copied to: {dest_media_path}")
+    print(f"✅ File moved to: {dest_media_path}")
     print(f"📄 Metadata saved to: {dest_json_path}")
 
 def main():
-    media_path, leaf_id, def_percent = sanitize_inputs()
+    media_path, leaf_id, def_status, def_percent = sanitize_inputs()
     if media_path:
-        organize_and_copy(media_path, leaf_id, def_percent)
+        organize_and_move(media_path, leaf_id, def_status, def_percent)
     else:
         print("No valid media file selected. Exiting.")
 
