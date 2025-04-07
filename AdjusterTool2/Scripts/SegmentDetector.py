@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-26
+# Last Modified: 2025-04-07
 
 import os
 import cv2
@@ -52,7 +52,15 @@ class SegmentDetector:
                            [0, -1, 0]])
         sharpened = cv2.filter2D(enhanced, -1, kernel)
         sharpened_float = sharpened.astype(np.float32) / 255.0
+        
+        '''
+        cv2.imshow("Image", resize_for_display(image))
+        cv2.imshow("Preprocessed", resize_for_display(sharpened_float))
 
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        '''
+        
         return sharpened_float
 
     def __extractTemplate(self, image):

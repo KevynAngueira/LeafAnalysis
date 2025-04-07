@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-26
-# Last Modified: 2025-03-26
+# Last Modified: 2025-04-07
 
 import os
 import shutil
@@ -90,7 +90,7 @@ def main():
     print(f"📁 Analysis output to: {output_folder}")
 
     leafScan = LeafScan(output_folder=segment_folder)
-    leafScan.scanVideo(str(video_path), str(output_folder))
+    leafScan.scanVideo(str(video_path), f"{str(output_folder)}/test.mp4")
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-26
+# Last Modified: 2025-04-07
 
 
 import cv2
@@ -40,7 +40,7 @@ class LeafScan:
         window_dimensions = (self.target_dimensions[0] / 100.0, self.target_dimensions[1] / 100.0)
         self.leafAreaCalculator = LeafAreaCalculator(window_dimensions)
 
-    def processFrame(self, frame, frame_count, output_path):
+    def processFrame(self, frame, frame_count, output_path, out=None):
         
         if frame_count >= 800 and frame_count % 1 == 0:
             view_window = self.viewWindow.Extract(frame, True)
@@ -63,6 +63,9 @@ class LeafScan:
 
         #if output_path and frame_count % 5 == 0:
         #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", view_window)
+
+        if out is not None:
+            out.write(leaf_result)
 
         return leaf_result
 
@@ -97,7 +100,7 @@ class LeafScan:
             if not ret:
                 break  
 
-            result = self.processFrame(frame, frame_count, output_path)
+            result = self.processFrame(frame, frame_count, output_path, out)
             #print(frame_count)
 
             # Write frame to output video if saving
