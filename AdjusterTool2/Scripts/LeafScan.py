@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-07
+# Last Modified: 2025-04-14
 
 
 import cv2
@@ -42,7 +42,7 @@ class LeafScan:
 
     def processFrame(self, frame, frame_count, output_path, out=None):
         
-        if frame_count >= 800 and frame_count % 1 == 0:
+        if frame_count >= 2000 and frame_count % 1 == 0:
             view_window = self.viewWindow.Extract(frame, True)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
         else:

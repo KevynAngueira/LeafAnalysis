@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-25
-# Last Modified: 2025-03-26
+# Last Modified: 2025-04-14
 
 import cv2
 import numpy as np
@@ -16,7 +16,7 @@ def nothing(x):
 
 # Load image
 #image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/Results/view_480.jpg")
-image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/frames/frame_360.jpg")
+image = cv2.imread("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/LeafMedia/006/healthy/results/01/leafSegments/frame_1.jpg")
 lab = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
 
 # Create a window

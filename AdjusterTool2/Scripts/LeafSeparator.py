@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-26
+# Last Modified: 2025-04-14
 
 
 import cv2
@@ -8,8 +8,10 @@ import numpy as np
 from dataclasses import dataclass
 
 from Scripts.HSVMask import HSVMask
+from Scripts.LABMask import LABMask
 from Scripts.ResizeForDisplay import resize_for_display
 
+"""
 @dataclass
 class LeafSeparatorConfig:
     leaf_bounds: tuple = (np.array([100, 0, 0]), np.array([179, 255, 255]))
@@ -20,6 +22,17 @@ class LeafSeparatorConfig:
     kernel_size: tuple = (3, 3)
     morph_iterations: int = 2
     blur: tuple = (3, 3)
+"""
+
+@dataclass
+class LeafSeparatorConfig:
+    leaf_bounds: tuple = (np.array([0, 0, 110]), np.array([255, 255, 255]))
+    target_dimensions: tuple = (650, 100)
+    border_margin: int = 30
+    kernel_size: tuple = (3, 3)
+    morph_iterations: int = 2
+    blur: tuple = (3, 3)
+
 
 class LeafSeparator:
     def __init__(self, config: LeafSeparatorConfig=None):
@@ -27,15 +40,13 @@ class LeafSeparator:
             config = LeafSeparatorConfig()
 
         self.leaf_bounds = config.leaf_bounds
-        self.low_sat_leaf_bounds = config.low_sat_leaf_bounds
-        self.sat_threshold = config.sat_threshold
         self.target_dimensions = config.target_dimensions
         self.border_margin = config.border_margin
         self.kernel_size = config.kernel_size
         self.morph_iterations = config.morph_iterations
         self.blur = config.blur
         
-        self.leafMask = HSVMask(config.leaf_bounds, config.sat_threshold, config.low_sat_leaf_bounds)
+        self.leafMask = LABMask(config.leaf_bounds)
     
     def _crop_using_contours(self, image):
         """
@@ -106,7 +117,7 @@ class LeafSeparator:
 
         preprocessed = self._imagePreprocessing(image)
 
-        leaf_result, leaf_mask = self.leafMask.applyHSVMask(preprocessed, True)
+        leaf_result, leaf_mask = self.leafMask.applyMask(preprocessed)
         leaf_pixels = np.count_nonzero(leaf_mask == 255)
 
         total_pixels = leaf_mask.size

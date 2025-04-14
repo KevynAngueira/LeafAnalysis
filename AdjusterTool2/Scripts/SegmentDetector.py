@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-07
+# Last Modified: 2025-04-14
 
 import os
 import cv2
@@ -127,7 +127,7 @@ class SegmentDetector:
 
             # Calculate displacement
             original_y, new_y = self.template_start_y, max_loc[1]
-            displacement = original_y - new_y
+            displacement = abs(original_y - new_y)
 
             self.prev_image = preprocessed
 

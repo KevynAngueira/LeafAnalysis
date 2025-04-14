@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-07
-# Last Modified: 2025-04-07
+# Last Modified: 2025-04-14
 
 import os
 import sys
@@ -24,7 +24,7 @@ from typing import List
 class DefoliationModellerConfig:
     slice_cell_size: float = 0.25
     grid_cell_size: float = 0.25
-    no_defo_zone: int = 2
+    no_defo_zone: int = 3
 
     possible_cell_selections: int = 6
 
@@ -538,7 +538,8 @@ class DefoliationModeller(LeafPlotter):
 
         is_possible = max_percentage >= combined_percentage
         
-        return is_possible, combined_percentage, max_percentage
+        #return is_possible, combined_percentage, max_percentage
+        return True, combined_percentage, max_percentage
 
     def show_interactive_browning_selector(self, grid_positions, grid_cell_size):
         fig, ax = plt.subplots()
@@ -666,17 +667,17 @@ class DefoliationModeller(LeafPlotter):
         print("==== TRANSFORMATION COUNTER ====")
         print(transformation_counter)
 
-
     def Plot(self):
         """
         Plots the applied transformations with a more visible and adjustable grid.
-        """ 
+        Includes darker grid lines at every 1-inch interval.
+        """
 
         outline = self.leaf_outline
         x_outline, y_outline = outline
 
         plt.figure(figsize=(8, 8))
-        
+
         # Draw the leaf first to keep it in the background
         plt.fill(x_outline, y_outline, color='green', alpha=0.5, label="Leaf")
 
@@ -704,22 +705,31 @@ class DefoliationModeller(LeafPlotter):
             plt.fill(x, y, color='saddlebrown', alpha=0.7, label="Brownings" if not browning_drawn else "")
             browning_drawn = True
 
-        # Improve grid visibility and adjust grid size to self.grid_cell_size
-        plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.7)
+        # Calculate grid ranges
+        x_min = np.floor(min(x_outline))
+        x_max = np.ceil(max(x_outline))
+        y_min = np.floor(min(y_outline))
+        y_max = np.ceil(max(y_outline))
 
-        # Adjust grid cell size based on self.grid_cell_size
-        x_ticks = np.arange(np.floor(min(x_outline) / self.grid_cell_size) * self.grid_cell_size, 
-                            np.ceil(max(x_outline) / self.grid_cell_size) * self.grid_cell_size + self.grid_cell_size, 
-                            self.grid_cell_size)
-        y_ticks = np.arange(np.floor(min(y_outline) / self.grid_cell_size) * self.grid_cell_size, 
-                            np.ceil(max(y_outline) / self.grid_cell_size) * self.grid_cell_size + self.grid_cell_size, 
-                            self.grid_cell_size)
-
+        # Light grid lines at self.grid_cell_size
+        x_ticks = np.arange(x_min, x_max + self.grid_cell_size, self.grid_cell_size)
+        y_ticks = np.arange(y_min, y_max + self.grid_cell_size, self.grid_cell_size)
         plt.xticks(x_ticks, rotation=90)
         plt.yticks(y_ticks)
+        plt.grid(True, which='both', linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+
+        # Darker grid lines at every inch
+        inch_x = np.arange(x_min, x_max + 1, 1)
+        inch_y = np.arange(y_min, y_max + 1, 1)
+
+        ax = plt.gca()
+        for x in inch_x:
+            ax.axvline(x=x, color='gray', linestyle='-', linewidth=1.2, alpha=0.9)
+        for y in inch_y:
+            ax.axhline(y=y, color='gray', linestyle='-', linewidth=1.2, alpha=0.9)
 
         # Aspect ratio and labels
-        plt.gca().set_aspect('equal', adjustable='datalim')
+        ax.set_aspect('equal', adjustable='datalim')
         plt.xlabel("Width (inches)")
         plt.ylabel("Length (inches)")
         plt.title("Leaf Shape with Transformations")
@@ -727,6 +737,7 @@ class DefoliationModeller(LeafPlotter):
 
         # Save the figure
         plt.savefig(f"leaf_plots/leaf{self.leaf_id:03}_trans_plot.png")
+
 
 if  __name__ == "__main__":
     if len(sys.argv) != 5:
