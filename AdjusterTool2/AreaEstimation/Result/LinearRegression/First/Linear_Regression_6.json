@@ -1,0 +1,6 @@
+{
+    "model": "Linear Regression",
+    "segments": 6,
+    "mse": 2.850093318110033,
+    "r2": 0.7370032370139765
+}

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-07
-# Last Modified: 2025-04-07
+# Last Modified: 2025-04-17
 
 
 
@@ -12,7 +12,7 @@ from typing import List
 class LeafDataConfig:
     leaf_file: str = '../LeafAreas.xlsx'
     sheet_name: str = 'LeafMeasurements'
-    headers: List[str] = field(default_factory=lambda: ['LeafID', 'SegmentID', 'Start_Width', 'End_Width'])
+    headers: List[str] = field(default_factory=lambda: ['LeafID', 'SegmentID', 'Start_Width', 'End_Width', 'Area'])
 
 class LeafData:
     def __init__(self, config: LeafDataConfig=None):

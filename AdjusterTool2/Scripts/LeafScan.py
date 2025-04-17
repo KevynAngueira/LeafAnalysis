@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-14
+# Last Modified: 2025-04-17
 
 
 import cv2
@@ -49,7 +49,6 @@ class LeafScan:
             view_window = self.viewWindow.Extract(frame)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
 
-        #is_new_segment, drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
         is_new_segment, drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
 
         if is_new_segment:
