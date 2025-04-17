@@ -69,8 +69,7 @@ for i in range(1, max_segments):
     segment_r2s.append((i, r2))
 
 # Print results
-print("
-Gradient Boosting + LOOCV R² for predicting each segment from previous segments:")
+print("Gradient Boosting + LOOCV R² for predicting each segment from previous segments:")
 for seg, r2 in segment_r2s:
     if r2 is not None:
         print(f"Segment {seg}: R² = {r2:.3f}")

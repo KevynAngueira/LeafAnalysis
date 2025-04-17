@@ -67,8 +67,7 @@ for i in range(1, max_segments):
 
 
 # Print results
-print("
-Linear Regression + LOOCV R² for predicting each segment from previous segments:")
+print("Linear Regression + LOOCV R² for predicting each segment from previous segments:")
 for seg, r2 in segment_r2s:
     if r2 is not None:
         print(f"Segment {seg}: R² = {r2:.3f}")
