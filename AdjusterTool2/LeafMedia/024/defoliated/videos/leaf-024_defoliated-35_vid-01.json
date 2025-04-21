@@ -1,0 +1,11 @@
+{
+    "leaf_id": "024",
+    "status": "defoliated",
+    "defoliation_percent": 35,
+    "media_type": "vid",
+    "media_id": "01",
+    "creation_date": "2025-04-21",
+    "slice_percentage": 10.0,
+    "cut_percentage": 35.0,
+    "plant_id": "d_00_001"
+}

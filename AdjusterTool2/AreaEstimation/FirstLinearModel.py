@@ -1,9 +1,10 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-17
-# Last Modified: 2025-04-17
+# Last Modified: 2025-04-21
 
 import sys
 import json
+import joblib
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -92,5 +93,8 @@ results = {
 }
 with open(f'Result/LinearRegression/First/Linear_Regression_{num_base_width_segments}.json', 'w') as f:
     json.dump(results, f, indent=4)
+
+# Save the model to a file
+joblib.dump(model, "SavedModels/linear_regression_model.pkl")
 
 plt.show()

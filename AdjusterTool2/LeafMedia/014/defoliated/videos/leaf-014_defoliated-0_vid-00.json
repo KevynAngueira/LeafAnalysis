@@ -4,5 +4,8 @@
     "defoliation_percent": 0,
     "media_type": "vid",
     "media_id": "00",
-    "creation_date": "2025-04-09"
+    "creation_date": "2025-04-09",
+    "slice_percentage": 60.0,
+    "cut_percentage": 0.0,
+    "plant_id": "d_00_003"
 }

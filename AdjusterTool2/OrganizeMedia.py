@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-26
-# Last Modified: 2025-03-26
+# Last Modified: 2025-04-21
 
 import os
 import shutil
@@ -82,6 +82,14 @@ def sanitize_inputs():
 
     return media_path, leaf_id, defoliation_status, def_percent
 
+def reencode_video_remove_audio(video_path):
+    temp_output = video_path.with_suffix(".temp.mp4")
+    command = f'ffmpeg -i "{video_path}" -c:v libx264 -preset fast -crf 23 -an "{temp_output}" -y'
+    print(f"🔄 Re-encoding and stripping audio: {video_path.name}")
+    os.system(command)
+    os.remove(video_path)  # remove original
+    os.rename(temp_output, video_path)  # replace with re-encoded version
+
 def organize_and_move(media_path, leaf_id, def_status, def_percent):
     file_ext = Path(media_path).suffix.lower()
     mime_type, _ = mimetypes.guess_type(media_path)
@@ -109,6 +117,10 @@ def organize_and_move(media_path, leaf_id, def_status, def_percent):
 
     dest_media_path = full_path / media_filename
     dest_json_path = full_path / json_filename
+
+    # If it's a video, re-encode and remove audio before moving
+    if is_video:
+        reencode_video_remove_audio(media_path)
 
     # Move the media file
     shutil.move(media_path, dest_media_path)

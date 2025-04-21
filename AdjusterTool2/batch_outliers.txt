@@ -1,0 +1,11 @@
+LeafMedia/010/defoliated/videos/leaf-010_defoliated-15_vid-02.mp4
+LeafMedia/011/defoliated/videos/leaf-011_defoliated-15_vid-00.mp4
+LeafMedia/011/defoliated/videos/leaf-011_defoliated-15_vid-01.mp4
+LeafMedia/017/defoliated/videos/leaf-017_defoliated-20_vid-00.mp4
+LeafMedia/018/defoliated/videos/leaf-018_defoliated-20_vid-00.mp4
+LeafMedia/018/defoliated/videos/leaf-018_defoliated-20_vid-01.mp4
+LeafMedia/019/defoliated/videos/leaf-019_defoliated-40_vid-00.mp4
+LeafMedia/019/defoliated/videos/leaf-019_defoliated-40_vid-01.mp4
+LeafMedia/024/defoliated/videos/leaf-024_defoliated-35_vid-00.mp4
+LeafMedia/024/defoliated/videos/leaf-024_defoliated-35_vid-01.mp4
+LeafMedia/026/defoliated/videos/leaf-026_defoliated-10_vid-01.mp4

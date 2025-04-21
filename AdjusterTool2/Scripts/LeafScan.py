@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-17
+# Last Modified: 2025-04-21
 
 
 import cv2
@@ -16,6 +16,7 @@ from Scripts.SegmentDetector import SegmentDetector
 from Scripts.PhaseCorrelationDetector import PhaseCorrelationDetector
 
 from Scripts.LeafAreaCalculator import LeafAreaCalculator
+from Scripts.LeafWidthExtractor import LeafWidthExtractor
 
 from Scripts.ResizeForDisplay import resize_for_display
 
@@ -39,6 +40,7 @@ class LeafScan:
 
         window_dimensions = (self.target_dimensions[0] / 100.0, self.target_dimensions[1] / 100.0)
         self.leafAreaCalculator = LeafAreaCalculator(window_dimensions)
+        self.leafWidthExtractor = LeafWidthExtractor()
 
     def processFrame(self, frame, frame_count, output_path, out=None):
         
@@ -53,12 +55,13 @@ class LeafScan:
 
         if is_new_segment:
             leaf_area = self.leafAreaCalculator.calculateSegment(leaf_mask)
+            self.leafWidthExtractor.extractWidth(leaf_mask)
             print(f"Area: {leaf_area}")
     
-        cv2.imshow("Frame", resize_for_display(frame))
-        cv2.imshow("View Window", resize_for_display(view_window))
-        cv2.imshow("Leaf Result", resize_for_display(leaf_mask))
-        cv2.imshow("Drawn Template", resize_for_display(drawn_template))
+        #cv2.imshow("Frame", resize_for_display(frame))
+        #cv2.imshow("View Window", resize_for_display(view_window))
+        #cv2.imshow("Leaf Result", resize_for_display(leaf_mask))
+        #cv2.imshow("Drawn Template", resize_for_display(drawn_template))
 
         #if output_path and frame_count % 5 == 0:
         #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", view_window)
@@ -68,12 +71,19 @@ class LeafScan:
 
         return leaf_result
 
+    def reset(self):
+        self.leafAreaCalculator.resetAreas()
+        self.segmentDetector.restSegements()
+        self.leafWidthExtractor.resetWidths()
+
     def scanVideo(self, video_path, output_path=None):
         """
         Processes a video frame by frame to detect and extract leaf area.
         If output_path is provided, saves the processed frames as a video.
         """
-    
+
+        self.reset()
+
         cap = cv2.VideoCapture(video_path)
 
         # Debug: Check if video opened
@@ -120,6 +130,11 @@ class LeafScan:
 
         print()
 
+        base_widths = self.leafWidthExtractor.getWidths()
+        print(f"Base Widths: {base_widths}")
+
+        print()
+
         all_areas = self.leafAreaCalculator.getAllAreas()
         print("All Areas:")
         print(all_areas)
@@ -129,4 +144,4 @@ class LeafScan:
         total_area = self.leafAreaCalculator.getTotalArea()
         print(f"Total Area: {total_area}")
 
-        return total_area
+        return total_area, base_widths

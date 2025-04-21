@@ -1,8 +1,9 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-17
-# Last Modified: 2025-04-17
+# Last Modified: 2025-04-21
 
 import json
+import joblib
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
@@ -10,8 +11,9 @@ import matplotlib.pyplot as plt
 from GetLeafModelData import GetLeafModelData
 
 num_base_width_segments = 3
+skip_segments = 1
 
-X, y = GetLeafModelData(num_base_width_segments)
+X, y = GetLeafModelData(num_base_width_segments, skip_segments)
 
 model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
 model.fit(X, y)
@@ -41,4 +43,8 @@ results = {
 with open(f'Result/GradientBoosting/GradientBoosting_{num_base_width_segments}_With_Length.json', 'w') as f:
     json.dump(results, f, indent=4)
 
+# Save the model to a file
+joblib.dump(model, "SavedModels/gradient_boosting_model.pkl")
+
 plt.show()
+

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-17
-# Last Modified: 2025-04-17
+# Last Modified: 2025-04-21
 
 import sys
 import json
@@ -14,7 +14,7 @@ sys.path.append("..")
 from DefoliationModeller.LeafData import LeafData
 
 
-def GetLeafModelData(num_base_width_segments, include_length=True):
+def GetLeafModelData(num_base_width_segments, skip_segments, include_length=True):
     leafData = LeafData()
 
     base_width_arr = []
@@ -25,7 +25,7 @@ def GetLeafModelData(num_base_width_segments, include_length=True):
         leaf_data = leafData.getLeafByID(i)
 
         # Use the first `num_base_width_segments`
-        base_widths = list(leaf_data["Start_Width"][:num_base_width_segments])
+        base_widths = list(leaf_data["Start_Width"][skip_segments:skip_segments+num_base_width_segments])
         base_width_arr.append(base_widths)
 
         # Area: sum of all segments except 0
@@ -55,6 +55,8 @@ def GetLeafModelData(num_base_width_segments, include_length=True):
     df = pd.DataFrame(base_width_arr, columns=[f"width_{i}" for i in range(num_base_width_segments)])
     df["length"] = length_arr
     df["original_area"] = areas_arr
+
+    print(df)
 
     if include_length:
         X = df[[f"width_{i}" for i in range(num_base_width_segments)] + ["length"]]

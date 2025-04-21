@@ -1,11 +1,16 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-26
-# Last Modified: 2025-04-07
+# Last Modified: 2025-04-21
 
-import os
+import random
 import shutil
+import joblib
+import numpy as np
+import pandas as pd
+
 from pathlib import Path
 from Scripts.LeafScan import LeafScan
+from DefoliationModeller.LeafData import LeafData
 
 BASE_DIR = Path("LeafMedia")
 
@@ -41,7 +46,7 @@ def parse_filename(filename):
     leaf_id = parts[0].split("-")[1]
     status, def_pct = parts[1].split("-")
     media_type, media_id = parts[2].split("-")
-    return leaf_id, status, def_pct, media_type, media_id
+    return leaf_id, status, int(def_pct), media_type, media_id
 
 def clear_folder(folder):
     if folder.exists():
@@ -73,8 +78,9 @@ def main():
         return
     video_path = prompt_selection("🎥 Select a video:", video_files)
 
-    # Step 4: Parse filename and prepare paths
-    _, _, _, _, media_id = parse_filename(video_path)
+    # Step 4: Parse filename
+    parsed_leaf_id, status_str, def_pct, _, media_id = parse_filename(video_path)
+    parsed_leaf_id_int = int(parsed_leaf_id)
 
     results_root = BASE_DIR / leaf_id / status / "results" / media_id
     segment_folder = results_root / "leafSegments"
@@ -89,8 +95,64 @@ def main():
     print(f"📁 Segment output to: {segment_folder}")
     print(f"📁 Analysis output to: {output_folder}")
 
+    # Step 6: Run LeafScan and get calculated area
     leafScan = LeafScan(output_folder=segment_folder)
-    leafScan.scanVideo(str(video_path), f"{str(output_folder)}/test.mp4")
+    calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(str(video_path), f"{str(output_folder)}/test.mp4")
+   
+    # Step 7: Get original area using LeafData
+    leafData = LeafData()
+    original_area_df = leafData.getAreaByID(parsed_leaf_id_int)
+    original_area = float(original_area_df)
+
+    # Step 8: Compute expected remaining area
+    if status == "healthy":
+        real_remaining_area = original_area
+    else:
+        real_remaining_area = original_area * (1 - def_pct / 100)
+
+    # Step 9: Percent change between calculated and expected remaining area
+    if real_remaining_area > 0:
+        remaining_area_pchange = (calculated_remaining_area - real_remaining_area) / real_remaining_area * 100
+    else:
+        remaining_area_pchange = 0.0
+
+    # Step 10: Compute the base widths and length esimation (noise)
+    #widths = leafData.getLeafByID(parsed_leaf_id_int)["Start_Width"].tolist()[1:4]
+    widths = calculated_base_widths
+    length = leafData.getLengthByID(parsed_leaf_id_int)
+
+    np.random.seed(42)
+    noise = np.random.uniform(-0.25, 0.25)
+    rough_length = round((length + noise) * 2) / 2
+
+    # Step 11: Compute estimate of the original leaf area
+    model_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/AreaEstimation/SavedModels/gradient_boosting_model.pkl"
+    gb_model = joblib.load(model_path)
+
+    X_pred = pd.DataFrame([widths + [rough_length]], columns=["width_0", "width_1", "width_2", "length"])
+    estimated_original_area = gb_model.predict(X_pred)[0]
+
+    # Step 12: Percent change between estimated and expected original area
+    original_area_pchange = ((estimated_original_area - original_area) / original_area) * 100
+
+    # Step 13: Compute estimated defoliation percentage
+    estimated_defoliation = (1 - calculated_remaining_area / estimated_original_area) * 100
+
+    # Step 14: Percent change between estimated and expected defoliation percentage
+    real_defoliation = def_pct
+    defoliation_pchange = ((estimated_defoliation - real_defoliation) / real_defoliation) * 100
+
+    # === Report ===
+    print("\n📊 --- Estimation Summary ---")
+    print(f"\n🌱 True Original Area: {original_area:.2f}")
+    print(f"📏 Estimated Original Area: {estimated_original_area:.2f} ({original_area_pchange:+.2f}% change)")
+
+    print(f"\n🌱 True Remaining Area: {real_remaining_area:.2f}")
+    print(f"📏 Scanned Remaining Area: {calculated_remaining_area:.2f} ({remaining_area_pchange:+.2f}% change)")
+
+    print(f"\n🌱 True Defoliation: {real_defoliation:.2f}%")
+    print(f"📏 Estimated Defoliation: {estimated_defoliation:.2f}% ({defoliation_pchange:+.2f}% change)")
+
 
 if __name__ == "__main__":
     main()

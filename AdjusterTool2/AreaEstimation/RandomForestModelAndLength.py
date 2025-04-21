@@ -1,8 +1,9 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-17
-# Last Modified: 2025-04-17
+# Last Modified: 2025-04-21
 
 import json
+import joblib
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
@@ -40,5 +41,8 @@ results = {
 }
 with open(f'Result/RandomForest/RandomForest_{num_base_width_segments}_With_Length.json', 'w') as f:
     json.dump(results, f, indent=4)
+
+# Save the model to a file
+joblib.dump(model, "SavedModels/random_forest_model.pkl")
 
 plt.show()

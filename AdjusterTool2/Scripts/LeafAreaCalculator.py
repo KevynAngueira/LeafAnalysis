@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-25
-# Last Modified: 2025-03-25
+# Last Modified: 2025-04-21
 
 
 
@@ -10,10 +10,11 @@ import numpy as np
 
 class LeafAreaCalculator:
     def __init__(self, window_dimensions = (6.5, 1.0)):
-        self.segment_area = window_dimensions[0]*window_dimensions[1]
-        print("Segment Area")
-        print(self.segment_area)
-        
+        self.segment_area = window_dimensions[0]*window_dimensions[1]        
+        self.leaf_area_arr = []
+        self.rolling_leaf_area = 0
+    
+    def resetAreas(self):
         self.leaf_area_arr = []
         self.rolling_leaf_area = 0
 

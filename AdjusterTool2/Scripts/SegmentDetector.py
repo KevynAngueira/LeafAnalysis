@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-14
+# Last Modified: 2025-04-21
 
 import os
 import cv2
@@ -24,6 +24,14 @@ class SegmentDetector:
         self.segment_count = 0
         self.frame_count = 0
 
+        self.prev_image = None
+        self.prev_mask = None
+        self.prev_max_loc = None
+
+    def restSegements(self):
+        self.total_displacement = 0
+        self.segment_count = 0
+        self.frame_count = 0
         self.prev_image = None
         self.prev_mask = None
         self.prev_max_loc = None
