@@ -40,8 +40,7 @@ def main():
     count = len(errors)
 
     # Print results
-    print("
-📊 --- Adjuster Defoliation Accuracy Stats ---")
+    print("📊 --- Adjuster Defoliation Accuracy Stats ---")
     print(f"👥 Total Responses: {count}")
     print(f"🔹 MAE (Mean Absolute Error): {mae:.2f}")
     print(f"🔸 MSE (Mean Squared Error): {mse:.2f}")

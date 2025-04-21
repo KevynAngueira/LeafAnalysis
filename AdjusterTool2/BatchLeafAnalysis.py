@@ -68,8 +68,7 @@ def save_progress(index):
 
 def save_outlier(video_path):
     with open(OUTLIERS_FILE, "a") as f:
-        f.write(f"{video_path}
-")
+        f.write(f"{video_path}")
 
 def append_result(row):
     header = not Path(RESULTS_FILE).exists()
@@ -168,16 +167,13 @@ def main():
         return
 
     df = pd.read_csv(RESULTS_FILE)
-    print("
-📊 --- Final Summary ---
-")
+    print("📊 --- Final Summary ---")
 
     def print_mae(title, data):
         print(f"{title}")
         print(f"🟩 MAE - Original Area: {np.mean(np.abs(data['estimated_original_area'] - data['real_original_area'])):.2f}")
         print(f"🟨 MAE - Remaining Area: {np.mean(np.abs(data['calculated_remaining_area'] - data['real_remaining_area'])):.2f}")
-        print(f"🟥 MAE - Defoliation %: {np.mean(np.abs(data['estimated_defoliation'] - data['real_defoliation'])):.2f}
-")
+        print(f"🟥 MAE - Defoliation %: {np.mean(np.abs(data['estimated_defoliation'] - data['real_defoliation'])):.2f}")
 
     print_mae("📁 ALL DATA", df)
 
