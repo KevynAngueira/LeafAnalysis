@@ -21,12 +21,13 @@ from Scripts.LeafWidthExtractor import LeafWidthExtractor
 from Scripts.ResizeForDisplay import resize_for_display
 
 class LeafScan:
-    def __init__(self, view_config: ViewWindowConfig = None, leaf_config: LeafSeparatorConfig = None, output_folder=None):
+    def __init__(self, view_config: ViewWindowConfig = None, leaf_config: LeafSeparatorConfig = None, output_folder=None, display=False):
         
         if view_config is None:
             view_config = ViewWindowConfig()
         if leaf_config is None:
             leaf_config = LeafSeparatorConfig()
+        self.display = display
 
         #self.viewWindow = ViewWindow(view_config)
         self.viewWindow = StabilizedViewWindow(view_config)
@@ -57,11 +58,12 @@ class LeafScan:
             leaf_area = self.leafAreaCalculator.calculateSegment(leaf_mask)
             self.leafWidthExtractor.extractWidth(leaf_mask)
             print(f"Area: {leaf_area}")
-    
-        #cv2.imshow("Frame", resize_for_display(frame))
-        #cv2.imshow("View Window", resize_for_display(view_window))
-        #cv2.imshow("Leaf Result", resize_for_display(leaf_mask))
-        #cv2.imshow("Drawn Template", resize_for_display(drawn_template))
+
+        if self.display:
+            cv2.imshow("Frame", resize_for_display(frame))
+            cv2.imshow("View Window", resize_for_display(view_window))
+            cv2.imshow("Leaf Result", resize_for_display(leaf_mask))
+            cv2.imshow("Drawn Template", resize_for_display(drawn_template))
 
         #if output_path and frame_count % 5 == 0:
         #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", view_window)

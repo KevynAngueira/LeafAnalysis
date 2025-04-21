@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-25
+# Last Modified: 2025-04-21
 
 
 import cv2
@@ -39,7 +39,7 @@ class StabilizedViewWindow(ViewWindow):
         center, size, angle = rect
         if size[0] > size[1]:
             size = size[::-1]
-            angle = (angle % 180) - 90
+            angle += 90
         normed_rect = (center, size, angle)
         return normed_rect
     
@@ -47,13 +47,16 @@ class StabilizedViewWindow(ViewWindow):
         center, size, angle = rect
         if size[0] < size[1]:
             size = size[::-1]
-            angle += 90
+            angle -= 90
         denormed_rect = (center, size, angle)
         return denormed_rect
 
     def __smoothDisplacement(self, current_rect, alpha=None):
         if alpha is None:
             alpha = self.alpha      
+
+        #print("-------------------")
+        #print(current_rect)
 
         current_rect = self.__normalizeRect(current_rect)
 

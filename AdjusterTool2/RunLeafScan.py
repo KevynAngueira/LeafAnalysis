@@ -96,7 +96,7 @@ def main():
     print(f"📁 Analysis output to: {output_folder}")
 
     # Step 6: Run LeafScan and get calculated area
-    leafScan = LeafScan(output_folder=segment_folder)
+    leafScan = LeafScan(output_folder=segment_folder, display=True)
     calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(str(video_path), f"{str(output_folder)}/test.mp4")
    
     # Step 7: Get original area using LeafData
