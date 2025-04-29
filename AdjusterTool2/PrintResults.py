@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-04-21
+# Last Modified: 2025-04-29
 
 import pandas as pd
 import numpy as np
@@ -10,17 +10,26 @@ RESULTS_FILE = "batch_defoliation_results.csv"
 OUTLIERS_FILE = "batch_outliers.txt"
 
 def print_mae(title, data):
+    oae = np.abs(data['estimated_original_area'] - data['real_original_area'])
+    rae = np.abs(data['calculated_remaining_area'] - data['real_remaining_area'])
+    dfe = np.abs(data['estimated_defoliation'] - data['real_defoliation'])
+
+    original_area_mae = np.mean(oae)
+    remaining_area_mae = np.mean(rae)
+    defoliation_mae = np.mean(dfe)
+
+    original_area_mape = np.mean(oae / np.abs(data['real_original_area'])) * 100
+    remaining_area_mape = np.mean(rae / np.abs(data['real_remaining_area'])) * 100
+    defoliation_smape = np.mean(2 * dfe / (np.abs(data['estimated_defoliation']) + np.abs(data['real_defoliation']) + 1e-8)) * 100
+
     print(f"{title}")
-    print(f"🟩 MAE - Original Area: {np.mean(np.abs(data['estimated_original_area'] - data['real_original_area'])):.2f}")
-    print(f"🟨 MAE - Remaining Area: {np.mean(np.abs(data['calculated_remaining_area'] - data['real_remaining_area'])):.2f}")
-    print(f"🟥 MAE - Defoliation %: {np.mean(np.abs(data['estimated_defoliation'] - data['real_defoliation'])):.2f}
-")
+    print(f"🟩 Original Area - MAE: {original_area_mae:.2f} | MAPE: {original_area_mape:.2f}%")
+    print(f"🟨 Remaining Area - MAE: {remaining_area_mae:.2f} | MAPE: {remaining_area_mape:.2f}%")
+    print(f"🟥 Defoliation % - MAR {defoliation_mae:.2f} | SMAPE: {defoliation_smape:.2f}%")
 
 def main():
     df = pd.read_csv(RESULTS_FILE)
-    print("
-📊 --- Final Summary ---
-")
+    print("📊 --- Final Summary ---")
 
     print_mae("📁 ALL DATA", df)
 

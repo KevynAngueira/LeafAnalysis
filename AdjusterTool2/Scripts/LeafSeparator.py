@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-14
+# Last Modified: 2025-04-29
 
 
 import cv2
@@ -48,7 +48,7 @@ class LeafSeparator:
         
         self.leafMask = LABMask(config.leaf_bounds)
     
-    def _crop_using_contours(self, image):
+    def _crop_using_contours(self, image, **kwargs):
         """
         Crop the tool's frontpiece by detecting contours at the edges of the image and cropping to their mean height.
         """
@@ -97,27 +97,27 @@ class LeafSeparator:
 
         return cropped_image
 
-    def _imagePreprocessing(self, image):
+    def _imagePreprocessing(self, image, stabilize):
         """
         Applying preprocessing to the image
             Crop Frontpiece -> Crops out remaining frontpiece from view window
             Resize -> Resize image View Window to standardized size
         """
 
-        cropped_image = self._crop_using_contours(image)
+        cropped_image = self._crop_using_contours(image, stabilize)
 
         resized_image = cv2.resize(cropped_image, self.target_dimensions)
 
         return resized_image
 
-    def Extract(self, image, display=False):
+    def Extract(self, image, display=False, stabilize=True):
         """
         Extract the leaf-only mask, count leaf pixels, and calculate leaf percentage
         """
 
-        preprocessed = self._imagePreprocessing(image)
+        preprocessed = self._imagePreprocessing(image, stabilize)
 
-        leaf_result, leaf_mask = self.leafMask.applyMask(preprocessed)
+        leaf_result, leaf_mask = self.leafMask.applyMask(preprocessed, stabilize=stabilize)
         leaf_pixels = np.count_nonzero(leaf_mask == 255)
 
         total_pixels = leaf_mask.size
@@ -132,7 +132,7 @@ class LeafSeparator:
             cv2.imshow("Leaf Mask", resize_for_display(leaf_mask))
             cv2.imshow("Leaf Result", resize_for_display(leaf_result))
 
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            #cv2.waitKey(0)
+            #cv2.destroyAllWindows()
 
         return leaf_result, leaf_mask, leaf_pixels, leaf_percentage

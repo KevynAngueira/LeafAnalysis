@@ -7,5 +7,7 @@
     "creation_date": "2025-04-21",
     "slice_percentage": 50.0,
     "cut_percentage": 10.0,
-    "plant_id": "d_00_002"
+    "plant_id": "d_00_002",
+    "original_length": 12.0,
+    "remaining_length": 11.0
 }

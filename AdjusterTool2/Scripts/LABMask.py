@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-25
-# Last Modified: 2025-03-25
+# Last Modified: 2025-04-29
 
 
 import cv2
@@ -20,7 +20,7 @@ class LABMask:
         
         return lab
     
-    def applyMask(self, image, invert_range=False, preprocess=True):
+    def applyMask(self, image, invert_range=False, preprocess=True, **kwargs):
         """
         Applies CIE LAB mask based on bounds
         """        

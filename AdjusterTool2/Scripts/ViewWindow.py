@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-03-25
+# Last Modified: 2025-04-29
 
 
 import cv2
@@ -191,7 +191,7 @@ class ViewWindow:
 
         return expanded_box
 
-    def Extract(self, image, display=False):
+    def Extract(self, image, display=False, **kwargs):
         """
         Extract the view window from the image
         """

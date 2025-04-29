@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-21
+# Last Modified: 2025-04-29
 
 
 import cv2
@@ -26,6 +26,11 @@ class StabilizedViewWindow(ViewWindow):
 
         self.confirmation_frames = confirmation_frames
 
+    def resetViewWindow(self):
+        self.prev_rect = None
+        self.prev_center = None
+        self.prev_window = None
+
     def __calculateCenter(self, rect):
         """Calculate the center of the bounding box (minAreaRect)."""
         center = rect[0]  # The center of the bounding box (minAreaRect)
@@ -39,7 +44,7 @@ class StabilizedViewWindow(ViewWindow):
         center, size, angle = rect
         if size[0] > size[1]:
             size = size[::-1]
-            angle += 90
+            angle = (angle + 90) % 180
         normed_rect = (center, size, angle)
         return normed_rect
     
@@ -47,7 +52,7 @@ class StabilizedViewWindow(ViewWindow):
         center, size, angle = rect
         if size[0] < size[1]:
             size = size[::-1]
-            angle -= 90
+            angle = (angle - 90) % 180
         denormed_rect = (center, size, angle)
         return denormed_rect
 
@@ -119,10 +124,6 @@ class StabilizedViewWindow(ViewWindow):
                 # Confirmed large movement, apply EMA
                 stabilized_rect = self.__smoothDisplacement(current_rect, alpha)
 
-                #print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-                #print(f"Applying Large Move: {stabilized_rect}")
-                #print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
                 return stabilized_rect
             else:
                 # Hold previous rect until confirmation
@@ -147,9 +148,11 @@ class StabilizedViewWindow(ViewWindow):
         else:
             empty_image = np.zeros((100, 650, 3), dtype=np.uint8)
             return empty_image
+        
+        print("Lost Target")
                 
 
-    def Extract(self, image, display=False):
+    def Extract(self, image, display=False, stabilize=True):
         """
         Extract the stabilized view window from the image, based on center displacement.
         """
@@ -162,7 +165,7 @@ class StabilizedViewWindow(ViewWindow):
 
         if target_box is not None:
             # Target Found → Stabilize View Window
-            stabilized_rect = self.__stabilizeMovement(target_rect)
+            stabilized_rect = self.__stabilizeMovement(target_rect) if stabilize else target_rect
             self.lost_confirmation_counter = 0
 
             view_window = cropAndRotate(image, stabilized_rect)
@@ -182,7 +185,7 @@ class StabilizedViewWindow(ViewWindow):
             cv2.imshow("Target Contour", resize_for_display(target_countour))
             cv2.imshow("View Window", resize_for_display(view_window))
 
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            #cv2.waitKey(0)
+            #cv2.destroyAllWindows()
         
         return view_window

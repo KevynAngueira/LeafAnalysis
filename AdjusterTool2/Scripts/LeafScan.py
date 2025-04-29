@@ -1,8 +1,8 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-21
+# Last Modified: 2025-04-29
 
-
+import os
 import cv2
 import numpy as np
 
@@ -43,21 +43,21 @@ class LeafScan:
         self.leafAreaCalculator = LeafAreaCalculator(window_dimensions)
         self.leafWidthExtractor = LeafWidthExtractor()
 
-    def processFrame(self, frame, frame_count, output_path, out=None):
+    def processFrame(self, frame, output_path, out=None):
         
-        if frame_count >= 2000 and frame_count % 1 == 0:
-            view_window = self.viewWindow.Extract(frame, True)
+        if self.frame_count >= 5000 and frame_count % 1 == 0:
+            view_window = self.viewWindow.Extract(frame)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
         else:
             view_window = self.viewWindow.Extract(frame)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
 
-        is_new_segment, drawn_template = self.segmentDetector.detectSegment(leaf_result, leaf_mask)
+        _, drawn_template = self.segmentDetector.trackCummulativeDisplacement(leaf_result, leaf_mask)
 
-        if is_new_segment:
-            leaf_area = self.leafAreaCalculator.calculateSegment(leaf_mask)
-            self.leafWidthExtractor.extractWidth(leaf_mask)
-            print(f"Area: {leaf_area}")
+        #if is_new_segment:
+        #    leaf_area = self.leafAreaCalculator.calculateSegment(leaf_mask)
+        #    self.leafWidthExtractor.extractWidth(leaf_mask)
+        #    print(f"Area: {leaf_area}")
 
         if self.display:
             cv2.imshow("Frame", resize_for_display(frame))
@@ -71,56 +71,53 @@ class LeafScan:
         if out is not None:
             out.write(leaf_result)
 
+        self.frame_count += 1
+
         return leaf_result
 
-    def reset(self):
-        self.leafAreaCalculator.resetAreas()
-        self.segmentDetector.restSegements()
-        self.leafWidthExtractor.resetWidths()
+    def reset(self, full_reset=False):
+        self.leafSeparator.resetLeafSeparator()
+        self.viewWindow.resetViewWindow()
 
-    def scanVideo(self, video_path, output_path=None):
+        if full_reset:
+            self.leafAreaCalculator.resetAreas()
+            self.segmentDetector.resetSegments()
+            self.leafWidthExtractor.resetWidths()
+            self.frame_count = 0
+
+    def processVideo(self, video_path, output_path=None):
         """
-        Processes a video frame by frame to detect and extract leaf area.
-        If output_path is provided, saves the processed frames as a video.
+        Processes a leaf video frame by frame:
+        (1) Crops video to the target view window
+        (2) Separates leaf pixels from background
+        (3) Tracks vertical displacement for new leaf segment starts
         """
 
-        self.reset()
+        self.reset(True)
 
         cap = cv2.VideoCapture(video_path)
-
-        # Debug: Check if video opened
         if not cap.isOpened():
             print(f"Error: Could not open video {video_path}")
             return
 
-        # Get video properties
-        frame_width = self.target_dimensions[0]
-        frame_height = self.target_dimensions[1]
+        # Set video properties
+        frame_width, frame_height = self.target_dimensions
         fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-        # Define the video writer if saving output
+        # If saving output, define video writer
         if output_path:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4 format
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
-
-        frame_count = 0
+        
         while cap.isOpened():
             ret, frame = cap.read()
-            
+
             # Stop when the video ends
             if not ret:
-                break  
+                break
 
-            result = self.processFrame(frame, frame_count, output_path, out)
-            #print(frame_count)
-
-            # Write frame to output video if saving
-            #if output_path and frame_count % 20 == 0:
-            #    out.write(result)
-            #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", frame)
-
-            frame_count += 1
-
+            result = self.processFrame(frame, output_path, out)
+            
             # Press 'q' to stop early
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -129,6 +126,50 @@ class LeafScan:
         if output_path:
             out.release()
         cv2.destroyAllWindows()
+    
+    def extractResults(self,remaining_leaf_length, video_path, output_folder=None):
+        """
+        Save the unique segments, calculate remaining area, and extract the base widths
+        """
+        self.reset(False)
+
+        # Get the indexes of the unique leaf segments
+        segment_indexes = self.segmentDetector.getSegmentIndexes(remaining_leaf_length)
+
+        # Setup second video trace 
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            print(f"Error: Could not open video {video_path}")
+            return
+
+        # Extract the unique leaf segments, calculate their area and widths, and save them
+        for segment_idx, frame_idx in enumerate(segment_indexes):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)  # Fast jump to frame
+            ret, frame = cap.read()
+
+            if ret:
+                view_window = self.viewWindow.Extract(frame, display=False, stabilize=False)
+                leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window, display=False, stabilize=False)
+
+                leaf_area = self.leafAreaCalculator.calculateSegment(leaf_mask)
+                self.leafWidthExtractor.extractWidth(leaf_mask)
+
+                print(f"Unique Segment Detected! | Frame Index = {frame_idx} AND Segment Area = {leaf_area}")
+                
+                if output_folder is not None:
+                    output_path = os.path.join(output_folder, f"frame_{frame_idx}.jpg")
+                    cv2.imwrite(output_path, frame)
+                    print("Saved Segment!")
+
+                    cv2.imshow("Frame", resize_for_display(leaf_result))
+
+                    #cv2.waitKey(0)
+                    #cv2.destroyAllWindows()
+            else:
+                print(f"Warning: Failed to grab frame at index {frame_idx}")
+
+        cap.release()
+        print("Done.")
 
         print()
 
@@ -145,5 +186,11 @@ class LeafScan:
 
         total_area = self.leafAreaCalculator.getTotalArea()
         print(f"Total Area: {total_area}")
+
+        return total_area, base_widths
+    
+    def scanVideo(self, remaining_leaf_length, video_path, output_path=None):
+        self.processVideo(video_path, output_path)
+        total_area, base_widths = self.extractResults(remaining_leaf_length, video_path, output_path)
 
         return total_area, base_widths

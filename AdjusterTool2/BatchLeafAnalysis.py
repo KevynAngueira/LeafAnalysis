@@ -1,10 +1,11 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-04-21
+# Last Modified: 2025-04-29
 
 # Author: Kevyn Angueira Irizarry
 # Batch evaluation with MAE + resume + outlier save + error tolerance + skip leaf IDs < 6
 
+import json
 import joblib
 import numpy as np
 import pandas as pd
@@ -19,6 +20,20 @@ MODEL_PATH = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/AreaEstimation/Save
 RESULTS_FILE = "batch_defoliation_results.csv"
 OUTLIERS_FILE = "batch_outliers.txt"
 PROGRESS_FILE = "progress.txt"
+
+def getLengths(metadata_json):
+    if not metadata_json.exists():
+        print(f"❌ Could not find lengths.json at: {metadata_json}")
+        return
+    
+    with open(metadata_json, "r") as f:
+        lengths_data = json.load(f)
+
+    print(lengths_data)
+    original_length = lengths_data.get('original_length', None)
+    remaining_length = lengths_data.get('remaining_length', None)
+
+    return original_length, remaining_length
 
 def parse_filename(filename):
     name = filename.stem
@@ -68,7 +83,7 @@ def save_progress(index):
 
 def save_outlier(video_path):
     with open(OUTLIERS_FILE, "a") as f:
-        f.write(f"{video_path}")
+        f.write(f"{video_path}\n")
 
 def append_result(row):
     header = not Path(RESULTS_FILE).exists()
@@ -122,15 +137,16 @@ def main():
             segment_folder.mkdir(parents=True, exist_ok=True)
             output_folder.mkdir(parents=True, exist_ok=True)
 
-            calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(str(video_path), f"{str(output_folder)}/test.mp4")
-
-            widths = calculated_base_widths
-            length = leafData.getLengthByID(leaf_id)
+            original_length, remaining_length = getLengths(video_path.with_suffix('.json'))
             np.random.seed(42)
             noise = np.random.uniform(-0.25, 0.25)
-            rough_length = round((length + noise) * 2) / 2
+            rough_original_length = round((original_length + noise) * 2) / 2
+            rough_remaining_length = round((original_length + noise) * 2) / 2
 
-            X_pred = pd.DataFrame([widths + [rough_length]], columns=["width_0", "width_1", "width_2", "length"])
+            calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
+
+            widths = calculated_base_widths
+            X_pred = pd.DataFrame([widths + [rough_original_length]], columns=["width_0", "width_1", "width_2", "length"])
             estimated_original_area = gb_model.predict(X_pred)[0]
 
             estimated_defoliation = (1 - calculated_remaining_area / estimated_original_area) * 100
@@ -170,11 +186,23 @@ def main():
     print("📊 --- Final Summary ---")
 
     def print_mae(title, data):
-        print(f"{title}")
-        print(f"🟩 MAE - Original Area: {np.mean(np.abs(data['estimated_original_area'] - data['real_original_area'])):.2f}")
-        print(f"🟨 MAE - Remaining Area: {np.mean(np.abs(data['calculated_remaining_area'] - data['real_remaining_area'])):.2f}")
-        print(f"🟥 MAE - Defoliation %: {np.mean(np.abs(data['estimated_defoliation'] - data['real_defoliation'])):.2f}")
+        oae = np.abs(data['estimated_original_area'] - data['real_original_area'])
+        rae = np.abs(data['calculated_remaining_area'] - data['real_remaining_area'])
+        dfe = np.abs(data['estimated_defoliation'] - data['real_defoliation'])
 
+        original_area_mae = np.mean(oae)
+        remaining_area_mae = np.mean(rae)
+        defoliation_mae = np.mean(dfe)
+
+        original_area_mape = np.mean(oae / np.abs(data['real_original_area'])) * 100
+        remaining_area_mape = np.mean(rae / np.abs(data['real_remaining_area'])) * 100
+        defoliation_smape = np.mean(2 * dfe / (np.abs(data['estimated_defoliation']) + np.abs(data['real_defoliation']) + 1e-8)) * 100
+
+        print(f"{title}")
+        print(f"🟩 Original Area - MAE: {original_area_mae:.2f} | MAPE: {original_area_mape:.2f}%")
+        print(f"🟨 Remaining Area - MAE: {remaining_area_mae:.2f} | MAPE: {remaining_area_mape:.2f}%")
+        print(f"🟥 Defoliation % - MAR {defoliation_mae:.2f} | SMAPE: {defoliation_smape:.2f}%")
+   
     print_mae("📁 ALL DATA", df)
 
     outliers_path = Path(OUTLIERS_FILE)

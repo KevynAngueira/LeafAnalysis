@@ -1,7 +1,8 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-26
-# Last Modified: 2025-04-21
+# Last Modified: 2025-04-29
 
+import json
 import random
 import shutil
 import joblib
@@ -35,6 +36,20 @@ def prompt_selection(prompt_msg, options):
         except ValueError:
             pass
         print("Invalid choice. Try again.")
+
+def getLengths(metadata_json):
+    if not metadata_json.exists():
+        print(f"❌ Could not find lengths.json at: {metadata_json}")
+        return
+    
+    with open(metadata_json, "r") as f:
+        lengths_data = json.load(f)
+
+    print(lengths_data)
+    original_length = lengths_data.get('original_length', None)
+    remaining_length = lengths_data.get('remaining_length', None)
+
+    return original_length, remaining_length
 
 def parse_filename(filename):
     """
@@ -95,41 +110,44 @@ def main():
     print(f"📁 Segment output to: {segment_folder}")
     print(f"📁 Analysis output to: {output_folder}")
 
-    # Step 6: Run LeafScan and get calculated area
+    # Step 6: Get Adjuster inputs for original length and remaining length
+    metadata_json = video_path.with_suffix('.json')
+    original_length, remaining_length = getLengths(metadata_json)
+    
+    np.random.seed(42)
+    original_noise = np.random.uniform(-0.25,0.25)
+    rough_original_length = round((original_length+original_noise)*2)/2
+
+    remaining_noise = np.random.uniform(-0.25,0.25)
+    rough_remaining_length = round((remaining_length+remaining_noise)*2)/2
+
+    # Step 7: Run LeafScan and get calculated area
     leafScan = LeafScan(output_folder=segment_folder, display=True)
-    calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(str(video_path), f"{str(output_folder)}/test.mp4")
+    calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
    
-    # Step 7: Get original area using LeafData
+    # Step 8: Get original area using LeafData
     leafData = LeafData()
     original_area_df = leafData.getAreaByID(parsed_leaf_id_int)
     original_area = float(original_area_df)
 
-    # Step 8: Compute expected remaining area
+    # Step 9: Compute expected remaining area
     if status == "healthy":
         real_remaining_area = original_area
     else:
         real_remaining_area = original_area * (1 - def_pct / 100)
 
-    # Step 9: Percent change between calculated and expected remaining area
+    # Step 10: Percent change between calculated and expected remaining area
     if real_remaining_area > 0:
         remaining_area_pchange = (calculated_remaining_area - real_remaining_area) / real_remaining_area * 100
     else:
         remaining_area_pchange = 0.0
-
-    # Step 10: Compute the base widths and length esimation (noise)
-    #widths = leafData.getLeafByID(parsed_leaf_id_int)["Start_Width"].tolist()[1:4]
-    widths = calculated_base_widths
-    length = leafData.getLengthByID(parsed_leaf_id_int)
-
-    np.random.seed(42)
-    noise = np.random.uniform(-0.25, 0.25)
-    rough_length = round((length + noise) * 2) / 2
-
+    
     # Step 11: Compute estimate of the original leaf area
+    widths = calculated_base_widths
     model_path = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/AreaEstimation/SavedModels/gradient_boosting_model.pkl"
     gb_model = joblib.load(model_path)
 
-    X_pred = pd.DataFrame([widths + [rough_length]], columns=["width_0", "width_1", "width_2", "length"])
+    X_pred = pd.DataFrame([widths + [rough_original_length]], columns=["width_0", "width_1", "width_2", "length"])
     estimated_original_area = gb_model.predict(X_pred)[0]
 
     # Step 12: Percent change between estimated and expected original area

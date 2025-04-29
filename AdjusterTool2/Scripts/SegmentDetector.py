@@ -1,8 +1,9 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-21
+# Last Modified: 2025-04-29
 
 import os
+import math
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,22 +20,16 @@ class SegmentDetector:
         center_y = segment_height//2
         self.template_start_y = max(0, center_y - (band_height // 2))
         self.template_end_y = min(segment_height, center_y + (band_height // 2))
-        
+
+    def resetSegments(self):
         self.total_displacement = 0
-        self.segment_count = 0
         self.frame_count = 0
 
         self.prev_image = None
         self.prev_mask = None
         self.prev_max_loc = None
 
-    def restSegements(self):
-        self.total_displacement = 0
-        self.segment_count = 0
-        self.frame_count = 0
-        self.prev_image = None
-        self.prev_mask = None
-        self.prev_max_loc = None
+        self.cummulative_displacements = []
 
     def _imagePreprocessing(self, image):
         """
@@ -112,7 +107,7 @@ class SegmentDetector:
 
         return nonzero_ratio < self.empty_frame_threshold        
 
-    def trackDisplacement(self, image, mask):
+    def trackFrameDisplacement(self, image, mask):
         """
         Track the displacement from the last image to the next
         """
@@ -142,41 +137,40 @@ class SegmentDetector:
             return displacement, drawn_template
         return 0, preprocessed
 
-    def checkNewSegment(self, image, mask):
+    def trackCummulativeDisplacement(self, image, mask):
         """
-        Detects whether or not the image displays a unique segment
-
-        Detection is based on tracking total vertical displacement. 
-        Each segment is a fixed height. Declare a new segment is found
-        every fixed increment of total displacement.
+        Track the cumulative displacement across the video
         """
+        frame_displacement, drawn_template = self.trackFrameDisplacement(image, mask)
 
-        displacement, drawn_template = self.trackDisplacement(image, mask)
-
-        if displacement > 1:
-            self.total_displacement += displacement
+        if frame_displacement > 1:
+            self.total_displacement += frame_displacement
         self.frame_count += 1
 
-        #print(f"displacement: {displacement}")
-        #print(f"Total: {self.total_displacement}")
+        self.cummulative_displacements.append(self.total_displacement)
 
-        # TODO: For some reason displacement is double counted, *2 correction
-        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height
+        return self.total_displacement, drawn_template
 
-        return is_new_segment, drawn_template
-
-    def detectSegment(self, image, mask):
+    def getSegmentIndexes(self, remaining_leaf_length):
+        """
+        Returns the frame indexes of the unique leaf segments.
+        This is done by scaling the cumulative vertical movement to the remaining leaf length
+        """
         
-        is_new_segment, drawn_template = self.checkNewSegment(image, mask)
+        if remaining_leaf_length is  None:
+            segment_height = self.segment_height
+        else:
+            number_of_segments = math.ceil(remaining_leaf_length)-1
+            segment_height = self.total_displacement / number_of_segments
         
-        if is_new_segment:
-            self.segment_count += 1
-            print(f"Frame {self.segment_count} Detected!")
+        displacement_threshold = 0
+        segment_indexes = []
 
-            if self.output_folder is not None:
-                output_path = os.path.join(self.output_folder, f"frame_{self.segment_count}.jpg")
-                cv2.imwrite(output_path, image)
-        
-        return is_new_segment, drawn_template
+        for d_idx, displacement in enumerate(self.cummulative_displacements):
+            if displacement > displacement_threshold:
+                print(f"Detected Segment {len(segment_indexes)}: idx = {d_idx} | displacement = {displacement}")
+                segment_indexes.append(d_idx)
+                displacement_threshold += segment_height
 
-
+        print(segment_indexes)
+        return segment_indexes

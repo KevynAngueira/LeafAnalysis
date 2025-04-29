@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-03-18
+# Last Modified: 2025-04-29
 
 
 import cv2
@@ -23,7 +23,7 @@ class SmoothHSVMask(HSVMask):
             return new_mask
         return cv2.addWeighted(prev_mask, 1 - self.alpha, new_mask, self.alpha, 0)
 
-    def applyHSVMask(self, image, invert_range=False, preprocess=True):
+    def applyHSVMask(self, image, invert_range=False, preprocess=True, stabilize=True):
         """
         Applies one of the two HSV masks dynamically based on the background type.
             Colored In Background -> Base Mask
