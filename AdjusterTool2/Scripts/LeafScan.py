@@ -161,7 +161,7 @@ class LeafScan:
                     cv2.imwrite(output_path, frame)
                     print("Saved Segment!")
 
-                    cv2.imshow("Frame", resize_for_display(leaf_result))
+                    #cv2.imshow("Frame", resize_for_display(leaf_result))
 
                     #cv2.waitKey(0)
                     #cv2.destroyAllWindows()

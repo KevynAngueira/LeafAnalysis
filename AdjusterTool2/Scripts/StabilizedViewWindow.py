@@ -185,7 +185,7 @@ class StabilizedViewWindow(ViewWindow):
             cv2.imshow("Target Contour", resize_for_display(target_countour))
             cv2.imshow("View Window", resize_for_display(view_window))
 
-            #cv2.waitKey(0)
-            #cv2.destroyAllWindows()
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
         
         return view_window
