@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-01
 
 
 import cv2
@@ -92,10 +92,10 @@ class LeafSeparator:
         bottom_vals = y[(y >= height - margin) & not_in_leaf_strip]
 
         # Step 8: Capture the mean of each edge for future cropping
-        left  = int(np.mean(left_vals)) if len(left_vals) > 0 else 0
-        right  = int(np.mean(right_vals)) if len(right_vals) > 0 else width
-        top    = int(np.mean(top_vals)) if len(top_vals) > 0 else 0
-        bottom = int(np.mean(bottom_vals)) if len(bottom_vals) > 0 else height
+        left = min(int(np.max(left_vals)) if len(left_vals) > 0 else 0, margin)
+        right = max(int(np.min(right_vals)) if len(right_vals) > 0 else width, width-margin)
+        top = min(int(np.max(top_vals)) if len(top_vals) > 0 else 0, margin)
+        bottom = max(int(np.min(bottom_vals)) if len(bottom_vals) > 0 else height, height-margin)
 
         # Step 9: Crop the original image to the new edge bounds, removin the tool border
         bounds = (top, bottom, left, right)

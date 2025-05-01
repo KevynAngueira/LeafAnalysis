@@ -1,0 +1,18 @@
+Things to Try:
+
+Original Area:
+(1) Fixed Base Widths to use True Base Widths | FIXED
+(2) Retrain Estimation Model with Noise | FIXED
+
+
+Remaining Area:
+(1) Rotation Bug | FIXED
+(2) Inversion Bug | FIXED
+(3) Add Length Calculation | FIXED
+
+(3) Track Widths to determine segmentation accuracy
+(4) Optical Flow
+
+* Currently we have the right number of segments but there are still innacuracies on where
+
+

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-17
-# Last Modified: 2025-04-21
+# Last Modified: 2025-05-01
 
 import json
 import joblib
@@ -11,9 +11,14 @@ import matplotlib.pyplot as plt
 from GetLeafModelData import GetLeafModelData
 
 num_base_width_segments = 3
-skip_segments = 1
+skip_segments = 0
 
-X, y = GetLeafModelData(num_base_width_segments, skip_segments)
+precisions = {
+    'length': 1/4,
+    'base_widths': 1/16
+}
+
+X, y = GetLeafModelData(num_base_width_segments, skip_segments, precisions=precisions, pad_factor=4)
 
 model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
 model.fit(X, y)

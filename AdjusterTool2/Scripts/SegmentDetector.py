@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-01
 
 import os
 import math
@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 from Scripts.ResizeForDisplay import resize_for_display
 
 class SegmentDetector:
-    def __init__(self, output_folder=None, segment_height=100, band_height=40, empty_frame_threshold=0.02):
-        self.output_folder = output_folder
+    def __init__(self, segment_height=100, band_height=40, empty_frame_threshold=0.02):
         self.segment_height = segment_height
         self.band_height = band_height
         self.empty_frame_threshold = empty_frame_threshold
@@ -130,7 +129,7 @@ class SegmentDetector:
 
             # Calculate displacement
             original_y, new_y = self.template_start_y, max_loc[1]
-            displacement = abs(original_y - new_y)
+            displacement = original_y - new_y
 
             self.prev_image = preprocessed
 
@@ -143,11 +142,9 @@ class SegmentDetector:
         """
         frame_displacement, drawn_template = self.trackFrameDisplacement(image, mask)
 
-        if frame_displacement > 1:
-            self.total_displacement += frame_displacement
+        self.cummulative_displacements.append(frame_displacement)
+        #self.total_displacement += frame_displacement
         self.frame_count += 1
-
-        self.cummulative_displacements.append(self.total_displacement)
 
         return self.total_displacement, drawn_template
 
@@ -157,19 +154,38 @@ class SegmentDetector:
         This is done by scaling the cumulative vertical movement to the remaining leaf length
         """
         
-        if remaining_leaf_length is  None:
+        if not self.cummulative_displacements:
+            return []
+
+        # Determine majority direction (+ or -)
+        total = sum(self.cummulative_displacements)
+        majority_sign = 1 if total >= 0 else -1
+
+        # Filter displacements by majority direction and sub-pixel movement
+        filtered_displacements = [
+            d*majority_sign if d * majority_sign > 1 else 0
+            for d in self.cummulative_displacements
+        ]
+
+        # Compute cumulative sum of filtered values
+        cumulative_sum = np.cumsum(filtered_displacements)
+
+        # Calculate the height of each segment by scaling displacement to remaining leaf length
+        if remaining_leaf_length is None:
             segment_height = self.segment_height
         else:
-            number_of_segments = math.ceil(remaining_leaf_length)-1
-            segment_height = self.total_displacement / number_of_segments
+            number_of_segments = math.ceil(remaining_leaf_length) - 1
+            total_positive_disp = cumulative_sum[-1] if cumulative_sum.any() else 1
+            segment_height = total_positive_disp / number_of_segments
         
+        # Extract segments based on calculated segment height
         displacement_threshold = 0
         segment_indexes = []
 
-        for d_idx, displacement in enumerate(self.cummulative_displacements):
-            if displacement > displacement_threshold:
-                print(f"Detected Segment {len(segment_indexes)}: idx = {d_idx} | displacement = {displacement}")
-                segment_indexes.append(d_idx)
+        for idx, disp_sum in enumerate(cumulative_sum):
+            if disp_sum > displacement_threshold: 
+                print(f"Detected Segment {len(segment_indexes)}: idx = {idx} | displacement = {disp_sum}")
+                segment_indexes.append(idx)
                 displacement_threshold += segment_height
 
         print(segment_indexes)

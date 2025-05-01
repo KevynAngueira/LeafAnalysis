@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-17
-# Last Modified: 2025-04-21
+# Last Modified: 2025-05-01
 
 import sys
 import json
@@ -13,8 +13,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 sys.path.append("..")
 from DefoliationModeller.LeafData import LeafData
 
-
-def GetLeafModelData(num_base_width_segments, skip_segments, include_length=True):
+def GetLeafModelData(num_base_width_segments, skip_segments, precisions=None, include_length=True, pad_factor=1):
     leafData = LeafData()
 
     base_width_arr = []
@@ -22,34 +21,26 @@ def GetLeafModelData(num_base_width_segments, skip_segments, include_length=True
     length_arr = []
 
     for i in range(6, 27):
-        leaf_data = leafData.getLeafByID(i)
+        base_widths = list(leafData.getWidthsByID(i))[skip_segments:skip_segments+num_base_width_segments]
+        original_length, _ = leafData.getLengthsByID(i)
+        area = leafData.getAreaByID(i)
 
-        # Use the first `num_base_width_segments`
-        base_widths = list(leaf_data["Start_Width"][skip_segments:skip_segments+num_base_width_segments])
+        # Always add original data
         base_width_arr.append(base_widths)
+        length_arr.append(original_length)
+        areas_arr.append(area)
 
-        # Area: sum of all segments except 0
-        leaf_segment_areas = leaf_data["Area"]
-        leaf_area = leaf_segment_areas[1:].sum()
-        areas_arr.append(leaf_area)
+        # Add padded versions
+        if precisions and pad_factor > 1:
+            for _ in range(pad_factor - 1):
+                width_noise = precisions.get("base_widths", 0)
+                length_noise = precisions.get("length", 0)
 
-        # Length with taper adjustment
-        start_widths = list(leaf_data["Start_Width"])
-        end_widths = list(leaf_data["End_Width"])
-        segment_count = len(start_widths)
-
-        if segment_count < 2:
-            effective_length = segment_count
-        else:
-            last_start = start_widths[-1]
-            second_last_end = end_widths[-2]
-            if last_start < second_last_end and second_last_end > 0:
-                ratio = last_start / second_last_end
-                effective_length = (segment_count - 1) + ratio
-            else:
-                effective_length = segment_count
-
-        length_arr.append(effective_length)
+                noisy_widths = [w + np.random.normal(-width_noise, width_noise) for w in base_widths]
+                noisy_length = original_length + np.random.normal(-length_noise, length_noise)
+                base_width_arr.append(noisy_widths)
+                length_arr.append(noisy_length)
+                areas_arr.append(area)  # Area stays the same since the noise is synthetic
 
     # DataFrame setup
     df = pd.DataFrame(base_width_arr, columns=[f"width_{i}" for i in range(num_base_width_segments)])
@@ -65,3 +56,4 @@ def GetLeafModelData(num_base_width_segments, skip_segments, include_length=True
     y = df["original_area"]
 
     return X, y
+

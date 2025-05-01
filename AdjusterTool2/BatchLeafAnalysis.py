@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-01
 
 # Author: Kevyn Angueira Irizarry
 # Batch evaluation with MAE + resume + outlier save + error tolerance + skip leaf IDs < 6
@@ -137,23 +137,35 @@ def main():
             segment_folder.mkdir(parents=True, exist_ok=True)
             output_folder.mkdir(parents=True, exist_ok=True)
 
-            original_length, remaining_length = getLengths(video_path.with_suffix('.json'))
+            original_length, remaining_length = leafData.getLengthsByID(leaf_id)
+            base_widths = leafData.getWidthsByID(leaf_id)[:3]
+            
             np.random.seed(42)
-            noise = np.random.uniform(-0.25, 0.25)
-            rough_original_length = round((original_length + noise) * 2) / 2
-            rough_remaining_length = round((original_length + noise) * 2) / 2
+            precisions = {
+                "original": 1/4,
+                "remaining": 1/8,
+                "widths": 1/16
+            }
 
-            calculated_remaining_area, calculated_base_widths = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
+            def noisy_round(value, precision):
+                noise = np.random.uniform(-precision, precision, size=np.shape(value))
+                return np.round((value + noise) / precision) * precision
 
-            widths = calculated_base_widths
-            X_pred = pd.DataFrame([widths + [rough_original_length]], columns=["width_0", "width_1", "width_2", "length"])
+            rough_original_length = noisy_round(original_length, precisions['original'])
+            rough_remaining_length = noisy_round(remaining_length, precisions['remaining'])
+            rough_base_widths = noisy_round(base_widths, precisions['widths'])
+
+            calculated_remaining_area = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
+
+            widths = rough_base_widths
+            X_pred = pd.DataFrame([list(widths) + [rough_original_length]], columns=["width_0", "width_1", "width_2", "length"])
             estimated_original_area = gb_model.predict(X_pred)[0]
 
             estimated_defoliation = (1 - calculated_remaining_area / estimated_original_area) * 100
             real_defoliation = def_pct
 
             # Sanity check: prevent extreme miscalculations
-            if abs(calculated_remaining_area - real_remaining_area) > 2 * original_area:
+            if estimated_defoliation < 0 or abs(calculated_remaining_area - real_remaining_area) > 1 or abs(estimated_original_area - original_area) > 1:
                 print("⚠️ Error: Remaining area scan anomaly")
                 save_outlier(video_path)
                 outliers.append(video_path)
@@ -201,7 +213,7 @@ def main():
         print(f"{title}")
         print(f"🟩 Original Area - MAE: {original_area_mae:.2f} | MAPE: {original_area_mape:.2f}%")
         print(f"🟨 Remaining Area - MAE: {remaining_area_mae:.2f} | MAPE: {remaining_area_mape:.2f}%")
-        print(f"🟥 Defoliation % - MAR {defoliation_mae:.2f} | SMAPE: {defoliation_smape:.2f}%")
+        print(f"🟥 Defoliation % - MAE {defoliation_mae:.2f} | SMAPE: {defoliation_smape:.2f}%")
    
     print_mae("📁 ALL DATA", df)
 
@@ -216,6 +228,7 @@ def main():
             axis=1
         )]
 
+        print()
         print_mae("📁 WITHOUT OUTLIERS", df_filtered)
         print(f"✅ Processed {processed} new videos.")
         print(f"🚫 Outliers recorded: {len(outlier_filenames)} → loaded from {OUTLIERS_FILE}")

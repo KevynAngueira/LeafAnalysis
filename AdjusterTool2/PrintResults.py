@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-01
 
 import pandas as pd
 import numpy as np
@@ -25,7 +25,7 @@ def print_mae(title, data):
     print(f"{title}")
     print(f"🟩 Original Area - MAE: {original_area_mae:.2f} | MAPE: {original_area_mape:.2f}%")
     print(f"🟨 Remaining Area - MAE: {remaining_area_mae:.2f} | MAPE: {remaining_area_mape:.2f}%")
-    print(f"🟥 Defoliation % - MAR {defoliation_mae:.2f} | SMAPE: {defoliation_smape:.2f}%")
+    print(f"🟥 Defoliation % - MAE {defoliation_mae:.2f} | SMAPE: {defoliation_smape:.2f}%")
 
 def main():
     df = pd.read_csv(RESULTS_FILE)

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-07
-# Last Modified: 2025-04-21
+# Last Modified: 2025-05-01
 
 
 
@@ -14,7 +14,7 @@ class LeafDataConfig:
     measurements_sheet: str = 'LeafMeasurements'
     areas_sheet: str = 'LeafAreas'
     measurements_headers: List[str] = field(default_factory=lambda: ['LeafID', 'SegmentID', 'Start_Width', 'End_Width', 'Area'])
-    areas_headers: List[str] = field(default_factory=lambda: ['LeafID', 'Area'])
+    areas_headers: List[str] = field(default_factory=lambda: ['LeafID', 'Area', 'Original_Length', 'Remaining_Length'])
 
 class LeafData:
     def __init__(self, config: LeafDataConfig=None):
@@ -72,28 +72,29 @@ class LeafData:
         # Return the area as a float
         return float(leaf_data['Area'].iloc[0])
     
-    def getLengthByID(self, leaf_id):
-        leaf_data = self.getLeafByID(leaf_id)
+    def getLengthsByID(self, leaf_id):
+        # Read the XLSX file
+        df = pd.read_excel(self.leaf_file, sheet_name=self.areas_sheet, engine='openpyxl')
 
-        start_widths = list(leaf_data["Start_Width"])
-        end_widths = list(leaf_data["End_Width"])
-        segment_count = len(start_widths)
+        # Filter out any rows where LeafID is NaN or empty
+        df = df[df[self.areas_headers[0]].notna()]
 
-        # Default length is the number of segments (1 inch per segment)
-        if segment_count < 2:
-            effective_length = segment_count
-        else:
-            last_start = start_widths[-1]
-            second_last_end = end_widths[-2]
+        # Filter the rows that match the given LeafID
+        leaf_data = df[df['LeafID'] == leaf_id]
 
-            # If the last segment is tapering, adjust its length
-            if last_start < second_last_end and second_last_end > 0:
-                ratio = last_start / second_last_end
-                effective_length = (segment_count - 1) + ratio
-            else:
-                effective_length = segment_count
+        # Clean the data by removing unnecessary columns and rows with missing values in critical columns
+        leaf_data = leaf_data[self.areas_headers]
 
-        return effective_length
+        # Check if we have data for the given LeafID
+        if leaf_data.empty:
+            raise ValueError(f"Error: No leaf data found for LeafID {leaf_id}. Check the XLSX file.")
+        
+        # Capture the original and remaining lengths 
+        original_length = float(leaf_data['Original_Length'].iloc[0])
+        remaining_length = float(leaf_data['Remaining_Length'].iloc[0])
+
+        # Return the original and remaining lengths
+        return original_length, remaining_length
 
 if __name__ == "__main__":
     leafData = LeafData()

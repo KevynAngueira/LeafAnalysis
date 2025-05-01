@@ -161,7 +161,7 @@ class SegmentDetector:
         #print(f"Total: {self.total_displacement}")
 
         # TODO: For some reason displacement is double counted, *2 correction
-        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height * 1.3
+        is_new_segment = self.total_displacement >= self.segment_count * self.segment_height
 
         return is_new_segment, drawn_template
 

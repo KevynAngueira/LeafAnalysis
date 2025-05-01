@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-01
 
 
 import cv2
@@ -52,7 +52,7 @@ class StabilizedViewWindow(ViewWindow):
         center, size, angle = rect
         if size[0] < size[1]:
             size = size[::-1]
-            angle = (angle - 90) % 180
+            angle = (angle - 90)
         denormed_rect = (center, size, angle)
         return denormed_rect
 
