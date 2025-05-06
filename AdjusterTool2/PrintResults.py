@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-05-01
+# Last Modified: 2025-05-06
 
 import pandas as pd
 import numpy as np
@@ -21,7 +21,8 @@ def print_mae(title, data):
     original_area_mape = np.mean(oae / np.abs(data['real_original_area'])) * 100
     remaining_area_mape = np.mean(rae / np.abs(data['real_remaining_area'])) * 100
     defoliation_smape = np.mean(2 * dfe / (np.abs(data['estimated_defoliation']) + np.abs(data['real_defoliation']) + 1e-8)) * 100
-
+    
+    print()
     print(f"{title}")
     print(f"🟩 Original Area - MAE: {original_area_mae:.2f} | MAPE: {original_area_mape:.2f}%")
     print(f"🟨 Remaining Area - MAE: {remaining_area_mae:.2f} | MAPE: {remaining_area_mape:.2f}%")

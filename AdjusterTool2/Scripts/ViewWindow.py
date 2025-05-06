@@ -1,11 +1,12 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-06
 
 
 import cv2
 import numpy as np
 from dataclasses import dataclass
+from itertools import combinations
 
 from Scripts.HSVMask import HSVMask
 from Scripts.LABMask import LABMask
@@ -70,71 +71,174 @@ class ViewWindow:
         return contours
 
     def _drawContours(self, image, contours, color=(255,255,0)):
-        """
-        Draw contours on the given image
-        """    
+
+        image_shape = image.shape
+
         def get_color(i):
             normalized = int(255 * (i % 10)/10 )
-            return (255 - normalized, 0, normalized)  # Blue for small, Red for large
+            return (255 - normalized, 0, normalized)
 
         drawn_contours = image.copy()
 
         if color is None:
-            for i, c in enumerate(contours):
-                color = get_color(i)
-                cv2.drawContours(drawn_contours, [c], -1, color, 2)                  
+            for i, contour in enumerate(contours):
+                if contour is None or len(contour) < 4:
+                    continue
+                            
+                draw_color = get_color(i) if color is None else color
+                cv2.drawContours(drawn_contours, [contour], -1, draw_color, 2)
         else:
             cv2.drawContours(drawn_contours, contours, -1, color, 2)
 
+
         return drawn_contours
-
-    def _contoursToViewWindow(self, contours, mask, display=False):
+        
+    def _contoursToViewWindow(self, contours, mask, display=False, fallback = True, fallback_top_k=3):
         """
-        Selects which contour represents the View Window based on the target dimension.
-
-        The View Window is:
-        (1) The largest contour that matches the target aspect ratio (within tolerance).
-        (2) A contour surrounded by white in the mask.
+        Attempts to detect the view window from a list of contours
+        (1) First tries finding a "direct match" (largest rect matching aspect ratio and surrounded by white)
+        (2) Then tries fallback to scaled rect (eliminated protrusions, then largest rect surrounded by white)
         """
 
-        target_rect = None
         target_box = None
+        target_rect = None
         max_area = 0
 
-        # Convert mask to BGR for visualization
+        fallback_candidates = []
+
+        # Visualization
         mask_vis = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-        
+
         for contour in contours:
-            # Get min area bounding box
+            if len(contour) < 4:
+                continue  # Skip trivial or broken contours
+
             min_rect = cv2.minAreaRect(contour)
-            box = cv2.boxPoints(min_rect)
-            box = np.intp(box)  # Convert to integer points
-            w, h = min_rect[1]  
+            box = cv2.boxPoints(min_rect).astype(np.int32)
+            w, h = min_rect[1]
 
-            aspect_ratio = max(w, h) / min(w, h) if min(w,h) != 0 else 0
+            if w == 0 or h == 0: 
+                continue # Skip trivial 2D contours
 
-            # Capture the largest contour that matches the target aspect ratio (within tolerance)
+            area = w * h
+            aspect_ratio = max(w, h) / min(w, h)
+
+            # Track for fallback later
+            fallback_candidates.append((area, contour))
+
+            # Try direct match
             if abs(aspect_ratio - self.target_aspect_ratio) <= self.aspect_ratio_tolerance:
-                area = w*h
-                if area > max_area:
-                    # Compute expanded bounding box
-                    expanded_box = self.__expandRotatedBox(min_rect, padding=20)
+                expanded_box = self.__expandRotatedBox(min_rect, padding=20)
 
-                    # Check if contour is surrounded by white area
-                    if self.__isSurroundedByWhite(mask, expanded_box, box):
-                        max_area = area
-                        target_box = box
-                        target_rect = min_rect
+                if self.__isSurroundedByWhite(mask, expanded_box, box) and area > max_area:
+                    target_box = box
+                    target_rect = min_rect
+                    max_area = area
 
-                    if display:
-                        # Draw contour (green)
-                        cv2.drawContours(mask_vis, [box], -1, (0, 255, 0), 2)
-                        # Draw expanded bounding box (red)
-                        cv2.drawContours(mask_vis, [expanded_box], -1, (0, 0, 255), 2)
+                if display:
+                    cv2.drawContours(mask_vis, [box], -1, (0, 255, 0), 2)
+                    cv2.drawContours(mask_vis, [expanded_box], -1, (0, 0, 255), 2)
 
-                        cv2.imshow("Mask Vis", resize_for_display(mask_vis))
-    
+        # Fallback: if no valid contour was found
+        if target_box is None and fallback and fallback_candidates:
+            # Try top-K largest contours
+            fallback_candidates.sort(key=lambda x: x[0], reverse=True)  # Sort by area descending
+
+            for _, contour in fallback_candidates[:fallback_top_k]:
+                best_box, best_rect = self._find_best_scaled_rect(contour, mask.shape)
+                
+                if best_box is not None:
+                    expanded_box = self.__expandRotatedBox(best_rect, padding=20)
+                    
+                    if self.__isSurroundedByWhite(mask, expanded_box, best_box):
+                        area = cv2.contourArea(best_box)
+                        
+                        if area > max_area:
+                            target_box = best_box
+                            target_rect = best_rect
+                            max_area = area
+
+        if display and target_box is not None:
+            cv2.drawContours(mask_vis, [target_box], -1, (255, 0, 0), 2)
+            cv2.imshow("Mask Vis", resize_for_display(mask_vis))
+            cv2.waitKey(1)
+
         return target_box, target_rect
+
+    def _percentile_contour_width_mask(self, contour, image_shape, percentile=75):
+        """
+        Calculates the specified percentile width of a contour using a binary mask.
+        """
+        # Step 1: Draw the contour to a binary mask
+        mask = np.zeros(image_shape[:2], dtype=np.uint8)
+        cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
+
+        # Step 2: Scan each row (y-axis) for nonzero (white) pixels
+        heights, widths = mask.shape
+        row_widths = []
+        for y in range(heights):
+            x_coords = np.where(mask[y, :] > 0)[0]
+            if x_coords.size >= 2:
+                row_widths.append(x_coords.max() - x_coords.min())
+
+        return np.percentile(row_widths, percentile) if row_widths else 0
+
+    def _find_best_scaled_rect(self, contour, image_shape, target_aspect_ratio=6.5):
+        """
+        Given a contour, find the best-placed scaled rectangle that fits inside it
+        by maximizing overlap.
+        
+        Args:
+            contour: The original contour (N, 1, 2)
+            image_shape: Shape of the full image for mask creation
+            target_aspect_ratio: Width / Height ratio (default 6.5)
+        
+        Returns:
+            best_box: Rotated rectangle box (4 points) with best overlap
+        """
+
+        # Step 1: Get minAreaRect
+        rect = cv2.minAreaRect(contour)
+        (cx, cy), (w, h), angle = rect
+
+        # Step 2: Ensure w is width and h is height such that width > height
+        if w < h:
+            w, h = h, w
+            angle += 90.0
+
+        # Step 3: Estimate scaled rectangle
+        # Use 75th percentile of all segment widths
+        scale_width = self._percentile_contour_width_mask(contour, image_shape, 75)
+        scale_height = scale_width / target_aspect_ratio
+
+        # Create the rotated rectangle of target size
+        scaled_rect = ((cx, cy), (scale_width, scale_height), angle)
+
+        # Step 4: Slide the rectangle vertically and find best overlap
+        contour_mask = np.zeros(image_shape[:2], dtype=np.uint8)
+        cv2.drawContours(contour_mask, [contour], -1, 255, thickness=cv2.FILLED)
+
+        max_overlap = 0
+        best_box = None
+        best_rect = None
+        step = 2  # pixels to move per step
+        search_range = int(h // 2)
+
+        for dy in range(-search_range, search_range + 1, step):
+            moved_center = (cx, cy + dy)
+            moved_rect = (moved_center, (scale_width, scale_height), angle)
+            box = cv2.boxPoints(moved_rect).astype(np.int32)
+
+            rect_mask = np.zeros_like(contour_mask)
+            cv2.drawContours(rect_mask, [box], -1, 255, thickness=cv2.FILLED)
+
+            overlap = cv2.countNonZero(cv2.bitwise_and(rect_mask, contour_mask))
+            if overlap > max_overlap:
+                max_overlap = overlap
+                best_box = box
+                best_rect = moved_rect
+
+        return best_box, best_rect
 
     def __isSurroundedByWhite(self, mask, expanded_box, original_box, white_threshold=0.75):
         """
@@ -209,7 +313,7 @@ class ViewWindow:
 
             cv2.imshow("Original", resize_for_display(image))
             cv2.imshow("Preprocessed", resize_for_display(preprocessed))
-            cv2.imshow("All Contours", resize_for_display(all_contours))
+            cv2.imshow("All Contours", all_contours)
             cv2.imshow("Target Contour", resize_for_display(target_countour))
             cv2.imshow("View Window", resize_for_display(view_window))
 

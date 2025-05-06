@@ -1,10 +1,12 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-25
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-06
 
 
 import cv2
 import numpy as np
+
+from Scripts.ResizeForDisplay import resize_for_display
 
 class LABMask:
     def __init__(self, lab_bounds):
@@ -24,6 +26,13 @@ class LABMask:
         """
         Applies CIE LAB mask based on bounds
         """        
+        
+        # Return empty mask if image is empty or completely black
+        if image is None or image.size == 0 or not np.any(image):
+            empty_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+            empty_result = np.zeros_like(image)
+            return empty_result, empty_mask
+
         # Apply preprocessing
         if preprocess:
             lab = self._imagePreprocessing(image)

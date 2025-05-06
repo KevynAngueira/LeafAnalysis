@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-05-01
+# Last Modified: 2025-05-06
 
 import os
 import math
@@ -143,7 +143,6 @@ class SegmentDetector:
         frame_displacement, drawn_template = self.trackFrameDisplacement(image, mask)
 
         self.cummulative_displacements.append(frame_displacement)
-        #self.total_displacement += frame_displacement
         self.frame_count += 1
 
         return self.total_displacement, drawn_template

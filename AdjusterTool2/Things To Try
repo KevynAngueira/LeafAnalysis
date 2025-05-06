@@ -8,7 +8,9 @@ Original Area:
 Remaining Area:
 (1) Rotation Bug | FIXED
 (2) Inversion Bug | FIXED
-(3) Add Length Calculation | FIXED
+(3) Inversion Bug 2.0 | Fixed
+(4) Add Length Calculation | FIXED
+(5) Lost Target Full Area Bug | FIXED 
 
 (3) Track Widths to determine segmentation accuracy
 (4) Optical Flow

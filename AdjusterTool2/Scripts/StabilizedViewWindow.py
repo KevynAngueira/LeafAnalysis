@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-05-01
+# Last Modified: 2025-05-06
 
 
 import cv2
@@ -11,7 +11,7 @@ from Scripts.ResizeForDisplay import resize_for_display
 from Scripts.CropAndRotate import cropAndRotate
 
 class StabilizedViewWindow(ViewWindow):
-    def __init__(self, config: ViewWindowConfig = None, movement_threshold=20, alpha: float = 0.1, confirmation_frames=5):
+    def __init__(self, config: ViewWindowConfig = None, movement_threshold=5, alpha: float = 0.1, confirmation_frames=5):
         super().__init__(config)
         
         self.prev_rect = None
@@ -90,15 +90,14 @@ class StabilizedViewWindow(ViewWindow):
         Stabilize movement by comparing the current center to the previous center.
         Small changes are ignored, medium changes are accepted, and large changes are checked over multiple frames.
         """
-
         current_center = self.__calculateCenter(current_rect)
 
         if self.prev_center is None:
             # First frame, initialize values
             self.prev_center = current_center
             
-            current_rect = self.__normalizeRect(current_rect)
-            self.prev_rect = current_rect
+            prev_rect = self.__normalizeRect(current_rect)
+            self.prev_rect = prev_rect
 
             return current_rect
         
@@ -108,7 +107,7 @@ class StabilizedViewWindow(ViewWindow):
             # Small movement → Apply EMA to position, size, and 
             #print("Small Movement")
             stabilized_rect = self.__smoothDisplacement(current_rect)
-            self.move_confirmation_counter = max(self.move_confirmation_counter // 2, 0) 
+            self.move_confirmation_counter = max(self.move_confirmation_counter - 1, 0) 
             return stabilized_rect
 
         else:
@@ -117,12 +116,14 @@ class StabilizedViewWindow(ViewWindow):
             
             #print(f"Large Movement -> Frame {self.move_confirmation_counter}")
             
-            if self.move_confirmation_counter >= self.confirmation_frames:
+            if self.move_confirmation_counter >= 0: # self.confirmation_frames:
                 # Confirm large movement, then smoothly transition over multiple frames
-                alpha = min(self.alpha * (self.move_confirmation_counter / self.confirmation_frames), 0.95)
+                alpha = min(self.alpha * (2*self.move_confirmation_counter), 0.95)
                
                 # Confirmed large movement, apply EMA
                 stabilized_rect = self.__smoothDisplacement(current_rect, alpha)
+
+                #print(f"Large Movement: {self.move_confirmation_counter}")
 
                 return stabilized_rect
             else:
@@ -133,7 +134,6 @@ class StabilizedViewWindow(ViewWindow):
         """
         Handle the target view window is lost.
         """
-
         if self.prev_rect is not None:
             # Lost Target → Require confirmation over multiple frames
             self.lost_confirmation_counter += 1
@@ -148,7 +148,6 @@ class StabilizedViewWindow(ViewWindow):
         else:
             empty_image = np.zeros((100, 650, 3), dtype=np.uint8)
             return empty_image
-        
         print("Lost Target")
                 
 

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-05-01
+# Last Modified: 2025-05-06
 
 
 import cv2
@@ -51,7 +51,8 @@ class LeafSeparator:
 
         if not contours:
             print("⚠️ No contours found. Returning original image.")
-            return image
+            no_bounds = (0, height, 0, width)
+            return image, no_bounds
 
         # Step 4: Combine all points
         all_points = np.vstack(contours).squeeze()

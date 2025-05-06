@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-05-01
+# Last Modified: 2025-05-06
 
 import os
 import cv2
@@ -47,6 +47,8 @@ class LeafScan:
 
     def processFrame(self, frame, output_path, out=None):
         
+        #print(self.frame_count)
+        
         if self.frame_count >= 2000 and self.frame_count % 1 == 0:
             view_window = self.viewWindow.Extract(frame, display=True)
             leaf_result, leaf_mask, leaf_pixels, leaf_percentage = self.leafSeparator.Extract(view_window)
@@ -56,18 +58,13 @@ class LeafScan:
 
         _, drawn_template = self.segmentDetector.trackCummulativeDisplacement(leaf_result, leaf_mask)
 
-        #if is_new_segment:
-        #    leaf_area = self.leafAreaCalculator.calculateSegment(leaf_mask)
-        #    self.leafWidthExtractor.extractWidth(leaf_mask)
-        #    print(f"Area: {leaf_area}")
-
-        #print(self.frame_count)
-
         if self.display:
             cv2.imshow("Frame", resize_for_display(frame))
             cv2.imshow("View Window", resize_for_display(view_window))
-            cv2.imshow("Leaf Result", resize_for_display(leaf_mask))
+            cv2.imshow("Leaf Mask", resize_for_display(leaf_mask))
+            cv2.imshow("Leaf Result", resize_for_display(leaf_result))
             cv2.imshow("Drawn Template", resize_for_display(drawn_template))
+
 
         #if output_path and frame_count % 5 == 0:
         #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", view_window)

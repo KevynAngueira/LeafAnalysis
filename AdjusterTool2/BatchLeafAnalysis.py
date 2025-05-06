@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-05-01
+# Last Modified: 2025-05-06
 
 # Author: Kevyn Angueira Irizarry
 # Batch evaluation with MAE + resume + outlier save + error tolerance + skip leaf IDs < 6
@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import os
+import shutil
 
 from Scripts.LeafScan import LeafScan
 from DefoliationModeller.LeafData import LeafData
@@ -21,19 +22,20 @@ RESULTS_FILE = "batch_defoliation_results.csv"
 OUTLIERS_FILE = "batch_outliers.txt"
 PROGRESS_FILE = "progress.txt"
 
-def getLengths(metadata_json):
+
+def reset_directory(dir_path):
+    shutil.rmtree(dir_path)
+    os.makedirs(dir_path, exist_ok=True)
+
+def printMetadata(metadata_json):
     if not metadata_json.exists():
-        print(f"❌ Could not find lengths.json at: {metadata_json}")
+        print(f"❌ Could not find metadata .json at: {metadata_json}")
         return
     
     with open(metadata_json, "r") as f:
         lengths_data = json.load(f)
 
     print(lengths_data)
-    original_length = lengths_data.get('original_length', None)
-    remaining_length = lengths_data.get('remaining_length', None)
-
-    return original_length, remaining_length
 
 def parse_filename(filename):
     name = filename.stem
@@ -155,6 +157,11 @@ def main():
             rough_remaining_length = noisy_round(remaining_length, precisions['remaining'])
             rough_base_widths = noisy_round(base_widths, precisions['widths'])
 
+            printMetadata(video_path.with_suffix('.json'))
+
+            reset_directory(segment_folder)
+            reset_directory(output_folder)
+            leafScan = LeafScan(output_folder=segment_folder)
             calculated_remaining_area = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
 
             widths = rough_base_widths

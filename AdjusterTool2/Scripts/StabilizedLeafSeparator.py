@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-18
-# Last Modified: 2025-04-29
+# Last Modified: 2025-05-06
 
 
 import cv2
@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 from Scripts.SmoothHSVMask import SmoothHSVMask
 from Scripts.SmoothLABMask import SmoothLABMask
+from Scripts.LABMask import LABMask
+
 from Scripts.ResizeForDisplay import resize_for_display
 from Scripts.LeafSeparator import LeafSeparator, LeafSeparatorConfig
 
@@ -23,14 +25,15 @@ class StabilizedLeafSeparator(LeafSeparator):
         self.prev_bottom_bound = None
         self.alpha_cropping = alpha_cropping
 
-        self.leafMask = SmoothLABMask(config.leaf_bounds, alpha=alpha_mask)
+        #self.leafMask = SmoothLABMask(config.leaf_bounds, alpha=alpha_mask)
+        self.leafMask = LABMask(config.leaf_bounds)
     
     def resetLeafSeparator(self):
         self.prev_left_bound = None
         self.prev_right_bound = None
         self.prev_top_bound = None
         self.prev_bottom_bound = None
-        self.leafMask.resetMask()
+        #self.leafMask.resetMask()
     
     def __smooth_bound(self, prev_value, new_value):
         """Apply exponential moving average (EMA) for smooth transitions."""
