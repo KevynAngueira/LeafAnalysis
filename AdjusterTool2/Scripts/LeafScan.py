@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-05-06
+# Last Modified: 2025-05-07
 
 import os
 import cv2
@@ -12,7 +12,7 @@ from Scripts.StabilizedLeafSeparator import StabilizedLeafSeparator
 from Scripts.ViewWindow import ViewWindow, ViewWindowConfig
 from Scripts.StabilizedViewWindow import StabilizedViewWindow
 
-from Scripts.SegmentDetector import SegmentDetector
+from Scripts.LKOpticalFlowDetector import SegmentDetector
 from Scripts.PhaseCorrelationDetector import PhaseCorrelationDetector
 
 from Scripts.LeafAreaCalculator import LeafAreaCalculator
