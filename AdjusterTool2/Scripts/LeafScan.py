@@ -12,7 +12,7 @@ from Scripts.StabilizedLeafSeparator import StabilizedLeafSeparator
 from Scripts.ViewWindow import ViewWindow, ViewWindowConfig
 from Scripts.StabilizedViewWindow import StabilizedViewWindow
 
-from Scripts.LKOpticalFlowDetector import SegmentDetector
+from Scripts.SegmentDetector import SegmentDetector
 from Scripts.PhaseCorrelationDetector import PhaseCorrelationDetector
 
 from Scripts.LeafAreaCalculator import LeafAreaCalculator

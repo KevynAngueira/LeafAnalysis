@@ -13,7 +13,7 @@ Remaining Area:
 
     (6) DONE | Farneback Optical Flow -- Attempted to swap to Farneback Optical Flow, worse results than Template Matching
     (7) DONE | Lucas-Kanade Optical Flow -- Attempted to swap to Lucas Kanade Optical Flow, better than Farneback but still worse Template Matching 
-    (8) TODO | Refine Leaf Mask -- Leaf Mask still leaves room for improvement. 
+    (8) DONE | Refine Leaf Mask -- Leaf Mask still leaves room for improvement. 
     
     (8) TODO | ????? -- Identify new bugs and think up on new strategies to improve our accuracy
 
