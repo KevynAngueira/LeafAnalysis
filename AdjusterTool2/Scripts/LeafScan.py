@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-17
-# Last Modified: 2025-05-07
+# Last Modified: 2025-06-25
 
 import os
 import cv2
@@ -41,8 +41,8 @@ class LeafScan:
         self.segmentDetector = SegmentDetector()
         #self.segmentDetector = PhaseCorrelationDetector(output_folder)
 
-        window_dimensions = (self.target_dimensions[0] / 100.0, self.target_dimensions[1] / 100.0)
-        self.leafAreaCalculator = LeafAreaCalculator(window_dimensions)
+        self.window_dimensions = (self.target_dimensions[0] / 100.0, self.target_dimensions[1] / 100.0)
+        self.leafAreaCalculator = LeafAreaCalculator(self.window_dimensions)
         self.leafWidthExtractor = LeafWidthExtractor()
 
     def processFrame(self, frame, output_path, out=None):
@@ -70,7 +70,11 @@ class LeafScan:
         #    cv2.imwrite(f"{output_path}/frame_{frame_count}.jpg", view_window)
 
         if out is not None:
-            out.write(leaf_result)
+            if drawn_template.dtype != np.uint8:
+                drawn_template = (drawn_template * 255).clip(0, 255).astype(np.uint8)
+            if len(drawn_template.shape) == 2:
+                drawn_template = cv2.cvtColor(drawn_template, cv2.COLOR_GRAY2BGR)
+            out.write(drawn_template)
 
         self.frame_count += 1
 
@@ -128,11 +132,14 @@ class LeafScan:
             out.release()
         cv2.destroyAllWindows()
     
-    def extractResults(self,remaining_leaf_length, video_path):
+    def extractResults(self,remaining_leaf_length, base_widths, video_path):
         """
         Save the unique segments, calculate remaining area, and extract the base widths
         """
         self.reset(False)
+
+        # Scanned length is reduced by the not scanned base widths
+        remaining_leaf_length -= len(base_widths)-1
 
         # Get the indexes of the unique leaf segments
         segment_indexes = self.segmentDetector.getSegmentIndexes(remaining_leaf_length)
@@ -171,21 +178,30 @@ class LeafScan:
         #base_widths = self.leafWidthExtractor.getWidths()
         #print(f"Base Widths: {base_widths}")
 
-        print()
 
-        all_areas = self.leafAreaCalculator.getAllAreas()
+        all_areas = []
+        total_area = 0
+        for idx in range(len(base_widths)-1):
+            avg_width = (base_widths[idx] + base_widths[idx+1]) / 2 
+            segment_area = avg_width * self.window_dimensions[1]
+            
+            all_areas.append(segment_area)
+            total_area += segment_area
+
+        print()           
+        all_areas += self.leafAreaCalculator.getAllAreas()
         print("All Areas:")
         print(all_areas)
 
         print()
 
-        total_area = self.leafAreaCalculator.getTotalArea()
+        total_area += self.leafAreaCalculator.getTotalArea()
         print(f"Total Area: {total_area}")
 
         return total_area #, base_widths
     
-    def scanVideo(self, remaining_leaf_length, video_path, output_path=None):
+    def scanVideo(self, remaining_leaf_length, base_widths, video_path, output_path=None):
         self.processVideo(video_path, output_path)
-        total_area = self.extractResults(remaining_leaf_length, video_path)
+        total_area = self.extractResults(remaining_leaf_length, base_widths, video_path)
 
         return total_area #, base_widths

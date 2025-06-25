@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-03-26
-# Last Modified: 2025-05-01
+# Last Modified: 2025-06-25
 
 import json
 import random
@@ -132,7 +132,7 @@ def main():
 
     # Step 7: Run LeafScan and get calculated area
     leafScan = LeafScan(output_folder=segment_folder, display=True)
-    calculated_remaining_area = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
+    calculated_remaining_area = leafScan.scanVideo(rough_remaining_length, rough_base_widths, str(video_path), f"{str(output_folder)}/test.mp4")
    
     # Step 8: Get original area using LeafData
     original_area_df = leafData.getAreaByID(parsed_leaf_id_int)

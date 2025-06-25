@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-05-07
-# Last Modified: 2025-05-07
+# Created: 2025-03-06
+# Last Modified: 2025-06-25
 
 import cv2
 import numpy as np
@@ -60,7 +60,7 @@ def get_random_segment_images(base_dir, num_images=6):
 def load_images_from_folder(folder):
     images = []
     for filename in sorted(os.listdir(folder)):
-        if filename.lower().endswith(".png"):
+        if filename.lower().endswith(".jpg"):
             path = folder / filename
             img = cv2.imread(str(path))
             if img is not None:
@@ -71,7 +71,7 @@ def load_images_from_folder(folder):
 # Load random segment images
 #BASE_DIR = Path("LeafMedia")
 #images, filenames = get_random_segment_images(BASE_DIR)
-BASE_DIR = Path("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/TestLab")
+BASE_DIR = Path("/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/TestLab/Flatboard")
 images = load_images_from_folder(BASE_DIR)
 
 if not images:

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-04-21
-# Last Modified: 2025-05-06
+# Last Modified: 2025-06-25
 
 # Author: Kevyn Angueira Irizarry
 # Batch evaluation with MAE + resume + outlier save + error tolerance + skip leaf IDs < 6
@@ -162,7 +162,7 @@ def main():
             reset_directory(segment_folder)
             reset_directory(output_folder)
             leafScan = LeafScan(output_folder=segment_folder)
-            calculated_remaining_area = leafScan.scanVideo(rough_remaining_length, str(video_path), f"{str(output_folder)}/test.mp4")
+            calculated_remaining_area = leafScan.scanVideo(rough_remaining_length, rough_base_widths, str(video_path), f"{str(output_folder)}/test.mp4")
 
             widths = rough_base_widths
             X_pred = pd.DataFrame([list(widths) + [rough_original_length]], columns=["width_0", "width_1", "width_2", "length"])
