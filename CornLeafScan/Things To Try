@@ -1,0 +1,19 @@
+Things to Try:
+
+Original Area:
+    (1) DONE | Wrong Base Widths Bug -- Using widths 3-6 rather than 0-2 as our base widths. Changed for user input measurements
+    (2) DONE | Simmulated Noise Model -- Model was trained without artificial noise, leading to overfitting and ignoring measurment error
+    
+Remaining Area:
+    (1) DONE | Remaining Lenght Segmentation -- Added remaining length measurements for improved leaf segment detection
+    (2) DONE | Displacement Inversion Bug -- Smoothing correction incorrectly flipped displacement direction without inverting image
+    (3) DONE | Image Inversion Bug -- Smoothing correction incorrectly inverted image
+    (4) DONE | Shape Breakage Bug -- Leaf lifts and overlaps over the frontpiece, breaking the rectangular shape of the view window preventing detection
+    (5) DONE | Lost Target Area Bug -- LAB mask treats 0, 0, 0 from lost target as non-black areas, which adds 6.5 are per lost frame
+
+    (6) DONE | Farneback Optical Flow -- Attempted to swap to Farneback Optical Flow, worse results than Template Matching
+    (7) DONE | Lucas-Kanade Optical Flow -- Attempted to swap to Lucas Kanade Optical Flow, better than Farneback but still worse Template Matching 
+    (8) DONE | Refine Leaf Mask -- Leaf Mask still leaves room for improvement. 
+    
+    (8) TODO | ????? -- Identify new bugs and think up on new strategies to improve our accuracy
+

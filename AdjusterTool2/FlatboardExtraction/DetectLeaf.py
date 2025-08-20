@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-06-25
-# Last Modified: 2025-06-25
+# Last Modified: 2025-08-20
 
 import os
 import cv2
@@ -23,7 +23,7 @@ class LeafDetectionConfig:
         30,    # green-ish
         #np.array([128, 128])   # brown-ish
     )
-    target_tolerance: int = 80
+    target_tolerance: int = 100
     percent_tolerance: float = 0.02
 
 class LeafDetector: 
@@ -34,7 +34,7 @@ class LeafDetector:
         
         self.__dict__.update(vars(leaf_config))
 
-    def mean_lab_distance(self, image_lab, contour, target, max_empty_ratio=0.5):
+    def meanLabDistance(self, image_lab, contour, target, max_empty_ratio=0.5):
         # Step 1: Create mask for this contour
         mask_contour = np.zeros(image_lab.shape[:2], dtype=np.uint8)
         cv2.drawContours(mask_contour, [contour], -1, 255, -1)
@@ -63,6 +63,33 @@ class LeafDetector:
         isolated = cv2.bitwise_and(image, image, mask=mask)
         return isolated
 
+    def stack_leaf_segments_vertically(self, leaf_segments, padding=10, bg_color=0):
+        # Step 1: Sort segments by x-position of contour center
+        def x_center(contour):
+            M = cv2.moments(contour)
+            return M['m10'] / M['m00'] if M['m00'] != 0 else 0
+
+        sorted_segments = sorted(leaf_segments, key=lambda seg: x_center(seg[2]))
+
+        # Step 2: Determine dimensions for stacked image
+        widths = [img.shape[1] for img, _, _ in sorted_segments]
+        heights = [img.shape[0] for img, _, _ in sorted_segments]
+        max_width = max(widths)
+        total_height = sum(heights) + padding * (len(sorted_segments) - 1)
+
+        # Step 3: Create empty black canvas
+        stacked_image = np.full((total_height, max_width, 3), bg_color, dtype=np.uint8)
+
+        # Step 4: Paste each segment centered horizontally, stacked vertically
+        y_offset = 0
+        for img, _, _ in sorted_segments:
+            h, w = img.shape[:2]
+            x_offset = (max_width - w) // 2
+            stacked_image[y_offset:y_offset + h, x_offset:x_offset + w] = img
+            y_offset += h + padding
+
+        return stacked_image
+
     def detect_leaf_segments(self, image_lab, contours):
         #image_lab = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
 
@@ -77,7 +104,8 @@ class LeafDetector:
             #w,h = min_rect[1]
             #rect_area = w*h
 
-            if area < total_area * self.percent_tolerance:
+            solidity = area / total_area
+            if solidity < self.percent_tolerance:
                 #print("Skipping, size")
                 continue
 
@@ -87,27 +115,19 @@ class LeafDetector:
                 #print("Skipping, complexity")
                 continue
 
-            min_dist = min(self.mean_lab_distance(image_lab, cnt, target) for target in self.leaf_targets)
-            #print(min_dist)
+            min_dist = min(self.meanLabDistance(image_lab, cnt, target) for target in self.leaf_targets)
+            print(min_dist, area)
 
             if min_dist < self.target_tolerance:  # adjustable threshold
                 leaf_like.append((cnt, area))
 
-        # Sort left to right (assuming horizontal layout)
-        def x_center(cnt): 
-            M = cv2.moments(cnt[0])
-            return M["m10"] / M["m00"] if M["m00"] != 0 else 0
-
-        leaf_like.sort(key=lambda c: x_center(c))
-
-        leaf_images = []
+        leaf_segments = []
 
         counter = 0
         for cnt, _ in leaf_like:
             x, y, w, h = cv2.boundingRect(cnt)
             isolated = self._isolateTarget(image_lab, cnt)
-            #leaf_crop = isolated[y:y+h, x:x+w]
-            leaf_images.append((isolated, cnt))
+            leaf_crop = isolated[y:y+h, x:x+w]
             
             print(f"==== Contour_{counter} ====")
 
@@ -115,22 +135,28 @@ class LeafDetector:
             print("Contour Area:", contour_area)
 
             # Step 1: Create mask for this contour
-            mask_contour = np.zeros(image_lab.shape[:2], dtype=np.uint8)
+            mask_contour = np.zeros(isolated.shape[:2], dtype=np.uint8)
             cv2.drawContours(mask_contour, [cnt], -1, 255, -1)
 
             # Step 2: Create mask of valid (non-black) pixels (e.g., L > 0)
-            non_black = cv2.inRange(image_lab, (1, 0, 0), (255, 255, 255))
+            non_black = cv2.inRange(isolated, (1, 0, 0), (255, 255, 255))
 
             # Step 3: Calculate number of pixels inside contour and number of valid pixels
-            valid_pixels = cv2.countNonZero(cv2.bitwise_and(mask_contour, non_black))
+            leaf_mask = cv2.bitwise_and(mask_contour, non_black)
+            valid_pixels = cv2.countNonZero(leaf_mask)
+            leaf_mask = leaf_mask[y:y+h, x:x+w]
+
             print("Contour Pixels:", valid_pixels)
 
+            leaf_segments.append((leaf_crop, leaf_mask, cnt))
+
             counter += 1
+        
+        if len(leaf_segments) > 0: 
+            stacked_image = self.stack_leaf_segments_vertically(leaf_segments)
+        else:
+            stacked_image = image_lab
 
-
-
-
-
-        return leaf_images    
+        return stacked_image, leaf_segments  
 
  

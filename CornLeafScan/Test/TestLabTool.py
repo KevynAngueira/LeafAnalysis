@@ -1,0 +1,97 @@
+# Author: Kevyn Angueira Irizarry
+# Created: 2025-08-20
+# Last Modified: 2025-08-20
+
+
+import os
+import cv2
+import numpy as np
+
+from Scripts.LABMask import LABMask
+from Scripts.ViewWindow import ViewWindow
+from Scripts.CropAndRotate import cropAndRotate
+from Scripts.ResizeForDisplay import resize_for_display
+
+# Load images from folder
+base_folder = "/home/icicle/VSCode/LeafAnalysis/AdjusterTool2/Videos/frames" 
+image_files = [f for f in os.listdir(base_folder) if os.path.isfile(os.path.join(base_folder, f))]
+
+if image_files is None:
+    print("No Images Found")
+
+print("Select an image by entering the corresponding number:")
+for i, filename in enumerate(image_files):
+    print(f"{i}: {filename}")
+
+while True:
+    try:
+        choice = int(input("Enter your choice: "))
+        if 0 <= choice < len(image_files):
+            filename = image_files[choice]
+            image_path = os.path.join(base_folder, filename)
+            break
+        else:
+            print("Invalid selection. Please enter a valid number.")
+    except ValueError:
+        print("Invalid input. Please enter a number.")
+
+image = cv2.imread(image_path)
+
+if image is None:
+    print("Error: Could not load image.")
+else:
+    #viewWindow = ViewWindow()
+    #view_window = viewWindow.Extract(image, True)
+
+    tool_lab_bounds = (np.array([0, 134, 104]), np.array([255, 255, 255]))
+    labMask = LABMask(tool_lab_bounds)
+    lab_result, lab_mask = labMask.applyMask(image)
+
+    cv2.imshow("Original Image", resize_for_display(image))
+    cv2.imshow("Lab Result", resize_for_display(lab_result))
+    cv2.imshow("Lab Mask", resize_for_display(lab_mask))
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+    """
+    # Tool hue mask
+    tool_hsv_bounds = (np.array([4, 0, 0]), np.array([172, 255, 255]))
+
+    # Tool target dimensions
+    target_dimensions = (6.5, 1)
+
+    # Extract Tool 
+    tool_mask = HSVMask(tool_hsv_bounds)
+    tool_hsv, mask = tool_mask.applyHSVMask(image)
+    
+    # Detect View Window
+    preprocessed = ViewWindow.imagePreprocessing(mask)
+    contours = ViewWindow.getContours(preprocessed)
+
+    drawn_contours = ViewWindow.drawContours(image, contours, None)
+
+    target_box, target_rect = ViewWindow.ViewWindowFromContours(contours)
+
+    print("==== Target Box ====")
+    print(target_box)
+    print("==== Target Rect ====")
+    print(target_rect)
+
+    target_countour = ViewWindow.drawContours(image, [target_box], (0, 255, 255))
+    result = cropAndRotate(image, target_rect)
+
+    cv2.imshow("Original Image", resize_for_display(image))
+    cv2.imshow("Mask", resize_for_display(mask))
+    cv2.imshow("Tool HSV", resize_for_display(tool_hsv))
+    cv2.imshow("Drawn Contours", resize_for_display(drawn_contours))
+    cv2.imshow("Target Contour", resize_for_display(target_countour))
+    cv2.imshow("Result", resize_for_display(result))
+
+    save_path = os.path.join(base_folder, 'Results', filename)
+    cv2.imwrite(save_path, result)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    """

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-06-25
-# Last Modified: 2025-06-25
+# Last Modified: 2025-08-20
 
 import os
 import cv2
@@ -16,19 +16,19 @@ from Scripts.ResizeForDisplay import resize_for_display
 from Scripts.CropAndRotate import cropAndRotate
 from Scripts.LABMask import LABMask
 
-IMG_PATH = "./Images/0-0-2-dark.jpg"
-
 @dataclass
 class FlatboardConfig:
     board_params: dict = field(default_factory=lambda: {
-        "bounds": (np.array([0, 0, 110]), np.array([255, 255, 255])),
+        "bounds": (np.array([0, 130, 0]), np.array([255, 255, 115])),
+        #"bounds": (np.array([0, 0, 110]), np.array([255, 255, 255])),
         "size": (17.0, 32.0),
         "aspect_ratio": 17.0/32.0,
-        "aspect_tolerance": 0.2
+        "aspect_tolerance": 0.1
     })
 
     scale_params: dict = field(default_factory=lambda: {
-        "bounds": (np.array([165, 130, 85]), np.array([255, 170, 255])),
+        #"bounds": (np.array([125, 126, 122]), np.array([255, 255, 255])),
+        "bounds": (np.array([0, 135, 105]), np.array([255, 255, 255])),
         "size": (5, 5),
         "aspect_ratio": 1,
         "aspect_tolerance": 0.2
@@ -66,12 +66,19 @@ class FlatboardExtractor:
         _, preprocessed = mask_obj.applyMask(image)
 
         # Morphological Close
-        if self.morph_iterations > 0:
-            kernel = np.ones(self.kernel_size, np.uint8)
-            preprocessed = cv2.morphologyEx(preprocessed, cv2.MORPH_CLOSE, kernel, iterations=self.morph_iterations)
+        #if self.morph_iterations > 0:
+        #    kernel = np.ones(self.kernel_size, np.uint8)
+        #    preprocessed = cv2.morphologyEx(preprocessed, cv2.MORPH_CLOSE, kernel, iterations=self.morph_iterations)
 
         # Gaussian Blur
-        preprocessed = cv2.GaussianBlur(preprocessed, self.blur, 0)
+        #preprocessed = cv2.GaussianBlur(preprocessed, self.blur, 0)     
+
+        #self.displayImage(preprocessed, "Preprocessed", True)
+
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(preprocessed, connectivity=8)
+        if num_labels > 1:
+            largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+            preprocessed = np.uint8(labels == largest_label) * 255   
 
         return preprocessed
 
@@ -93,7 +100,7 @@ class FlatboardExtractor:
 
         def get_color(i):
             normalized = int(255 * (i % 10)/10 )
-            return (255 - normalized, 0, normalized)
+            return (255 - normalized, normalized)
 
         drawn_contours = image.copy()
 
@@ -110,7 +117,7 @@ class FlatboardExtractor:
 
         return drawn_contours
 
-    def _contoursToTarget(self, contours, mask, params, display=False):
+    def _contoursToTarget(self, contours, mask, params, filter_aspect=False, display=False):
         """
         Attempts to detect the view window from a list of contours
         (1) First tries finding a "direct match" (largest rect matching aspect ratio and surrounded by white)
@@ -138,26 +145,29 @@ class FlatboardExtractor:
 
             area = w * h
             aspect_ratio = min(w, h) / max(w, h)
+            if display: print(area, aspect_ratio)
 
             # Try direct match
-            if abs(aspect_ratio - params["aspect_ratio"]) <= params["aspect_tolerance"]:
-                #expanded_box = self.__expandRotatedBox(min_rect, padding=20)
+            if filter_aspect and abs(aspect_ratio - params["aspect_ratio"]) > params["aspect_tolerance"]:
+                continue
+            
+            #expanded_box = self.__expandRotatedBox(min_rect, padding=20)
 
-                #if self.__isSurroundedByWhite(mask, expanded_box, box) and area > max_area:
-                if area > max_area:
-                    target_box = box
-                    target_rect = min_rect
-                    target_contour = contour
-                    max_area = area
+            #if self.__isSurroundedByWhite(mask, expanded_box, box) and area > max_area:
+            if area > max_area:
+                target_box = box
+                target_rect = min_rect
+                target_contour = contour
+                max_area = area
                     
 
-                if display:
-                    cv2.drawContours(mask_vis, [box], -1, (0, 255, 0), 2)
+            if display:
+                cv2.drawContours(mask_vis, [box], -1, (0, 255, 0), 2)
 
         if display and target_box is not None:
             cv2.drawContours(mask_vis, [target_box], -1, (255, 0, 0), 2)
             cv2.imshow("Mask Vis", resize_for_display(mask_vis))
-            cv2.waitKey(1)
+            cv2.waitKey(0)
 
         return target_rect, target_contour
 
@@ -167,17 +177,21 @@ class FlatboardExtractor:
         isolated = cv2.bitwise_and(image, image, mask=mask)
         return isolated
 
-    def processImage(self, original_image, params, is_width_greater=False):
+    def processImage(self, original_image, params, is_width_greater=False, display=False):
 
         mask_obj = params["mask"]
 
         preprocessed = self._imagePreprocessing(original_image, mask_obj)
+        
+        self.displayImage(preprocessed, "Preprocessed", True)
 
         contours = self._getContours(preprocessed)
 
-        target_rect, target_contour = self._contoursToTarget(contours, preprocessed, params, False)
+        target_rect, target_contour = self._contoursToTarget(contours, preprocessed, params, display=display)
 
         isolated = self._isolateTarget(original_image, target_contour)
+
+        self.displayImage(isolated, "Isolated", True)
 
         target = cropAndRotate(isolated, target_rect, is_width_greater)
 
@@ -205,24 +219,21 @@ class FlatboardExtractor:
 
         return contour_scale
 
-
-    def Extract(self, image_path, display=False):
+    def Extract(self, image_path, display=False, output_path=None):
         original_image = self.openImage(image_path)
 
         # Contours to Board
-        board_rect, board, _ = self.processImage(original_image, self.board_params)
+        board_rect, board, _ = self.processImage(original_image, self.board_params, display=False)
 
         # Contours to Pixel Scale
-        scale_rect, scale, scale_contour = self.processImage(board, self.scale_params, True)
+        scale_rect, scale, scale_contour = self.processImage(board, self.scale_params, True, display=True)
         pixel_scale = self._scaleObjectToPixelScale(scale_rect, self.scale_params['size'], scale_contour)
 
-        #print(pixel_scale)
-
-        board_result, board_mask = self.board_params['mask'].applyMask(board)
+        board_result, board_mask = self.board_params['mask'].applyMask(board, invert_range=True)
         board_contours = self._getContours(board_mask)
        
-        leaf_images = self.leafDetector.detect_leaf_segments(board_result, board_contours)
-        leaf_areas = [ cv2.contourArea(cnt) * pixel_scale for leaf_img, cnt in leaf_images ]
+        stacked_image, leaf_segments = self.leafDetector.detect_leaf_segments(board_result, board_contours)
+        leaf_areas = [ cv2.contourArea(cnt) * pixel_scale for leaf_img, leaf_mask, cnt in leaf_segments ]
         leaf_total_area = sum(leaf_areas)
 
         print("====== Segments ======")
@@ -239,27 +250,28 @@ class FlatboardExtractor:
             self.displayImage(drawn_contours, "Drawn Contours", False)
             self.displayImage(board_result, "Board Result")  
 
-            for idx, leaf_img in enumerate(leaf_images):
-                cnt = leaf_img[1]
-                mask_contour = np.zeros(leaf_img[0].shape[:2], dtype=np.uint8)
-                cv2.drawContours(mask_contour, [cnt], -1, 255, -1)
+            for idx, leaf_segment in enumerate(leaf_segments):
+                leaf_img, leaf_mask, cnt = leaf_segment               
+                self.displayImage(leaf_mask, f"Contour_{idx}", False)
+                self.displayImage(leaf_img, f"Segment_{idx}", True) 
 
-                # Step 2: Create mask of valid (non-black) pixels (e.g., L > 0)
-                non_black = cv2.inRange(leaf_img[0], (1, 0, 0), (255, 255, 255))
+            self.displayImage(stacked_image, "Leaf Result") 
 
-                # Step 3: Calculate number of pixels inside contour and number of valid pixels
-                valid_pixels = cv2.bitwise_and(mask_contour, non_black)
-               
-                self.displayImage(valid_pixels, f"Contour_{idx}", False)
-                self.displayImage(leaf_img[0], f"Segment_{idx}", True) 
-                
-        return leaf_total_area, leaf_areas
+        if output_path is not None:
+            cv2.imwrite(output_path, stacked_image)
+
+        return stacked_image, leaf_total_area, leaf_areas
 
 
 if __name__ == "__main__":
     flatboard = FlatboardExtractor()
 
-    #flatboard.Extract(IMG_PATH, flatboard.board_params)
-    #flatboard.processImage(IMG_PATH, flatboard.scale_params)
+    IMG_BASE_PATH = "/home/icicle/Research Datasets/LeafScan-CornDefoliation2025/Private/LeafScan-CornDefoliation2025-v1/data/field_02/plant_00/leaf_08/real"
+    OUT_BASE_PATH = "/home/icicle/Research Datasets/LeafScan-CornDefoliation2025/Private/LeafScan-CornDefoliation2025-v1/data/field_02/plant_00/leaf_08/output"
 
-    flatboard.Extract(IMG_PATH, True)
+    id_base = "02_00_08_00"
+
+    IMG_PATH = f"{IMG_BASE_PATH}/img_{id_base}.jpg"
+    OUT_PATH = f"{OUT_BASE_PATH}/out_{id_base}.jpg"
+    
+    flatboard.Extract(IMG_PATH, True, OUT_PATH)
