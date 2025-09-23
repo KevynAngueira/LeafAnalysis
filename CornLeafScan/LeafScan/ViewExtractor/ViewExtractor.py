@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Created: 2025-03-17
+# Last Modified: 2025-09-22
 
 import cv2
 import numpy as np
@@ -115,11 +115,11 @@ class ViewExtractor:
 
             # Try direct match
             if abs(aspect_ratio - self.target_aspect_ratio) <= self.aspect_ratio_tolerance:
-                expanded_box = self.__expandRotatedBox(min_rect, padding=20)
+                expanded_rect, expanded_box = self.__expandRotatedBox(min_rect, padding=self.padding)
 
                 if self.__isSurroundedByWhite(mask, expanded_box, box) and area > max_area:
-                    target_box = box
-                    target_rect = min_rect
+                    target_box = expanded_box
+                    target_rect = expanded_rect
                     max_area = area
 
                 if display:
@@ -135,14 +135,14 @@ class ViewExtractor:
                 best_box, best_rect = self._find_best_scaled_rect(contour, mask.shape)
                 
                 if best_box is not None:
-                    expanded_box = self.__expandRotatedBox(best_rect, padding=20)
+                    expanded_rect, expanded_box = self.__expandRotatedBox(best_rect, padding=self.padding)
                     
                     if self.__isSurroundedByWhite(mask, expanded_box, best_box):
                         area = cv2.contourArea(best_box)
                         
                         if area > max_area:
-                            target_box = best_box
-                            target_rect = best_rect
+                            target_box = expanded_box
+                            target_rect = expanded_rect
                             max_area = area
 
         if display and target_box is not None:
@@ -280,7 +280,7 @@ class ViewExtractor:
         expanded_box = cv2.boxPoints(expanded_rect)
         expanded_box = np.intp(expanded_box) 
 
-        return expanded_box
+        return expanded_rect, expanded_box
 
     def Extract(self, image, display=False, **kwargs):
         """

@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Created: 2025-02-07
+# Last Modified: 2025-09-22
 
 import cv2
 import numpy as np
@@ -17,9 +17,9 @@ def cropAndRotate(image, min_rect, is_width_greater=True):
     center, (w, h), angle = min_rect
 
     # Ensure width is always the greater measurement (left-to-right)
-    #if is_width_greater and w < h:
-    #    w, h = h, w
-    #    angle += 90 
+    if is_width_greater and w < h:
+        w, h = h, w
+        angle += 90 
     
     #if not is_width_greater and h < w:
     #    w, h = h, w
