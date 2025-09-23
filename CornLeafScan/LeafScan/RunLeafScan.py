@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Last Modified: 2025-09-22
 
 import json
 import shutil
@@ -17,7 +17,7 @@ def noisy_round(value, precision):
     noise = np.random.uniform(-precision, precision)
     return round((value + noise) / precision) * precision
 
-def get_current_leaf_length(video_path: Path) -> float:
+def get_current_leaf_length(video_path: Path, status: str) -> float:
     """
     Parses field, plant, and leaf IDs from video path and loads corresponding leaf_metadata.json.
     """
@@ -35,10 +35,15 @@ def get_current_leaf_length(video_path: Path) -> float:
 
     leaf_key = f"leaf_{leaf_id}"
     try:
-        length_str = leaf_metadata[leaf_key]["leaf_description"]["measurements"]["max_length"]["current"]
+        if status == "healthy":
+            subfolder = "original"
+        else:
+            subfolder = "simulated"
+
+        length_str = leaf_metadata[leaf_key]["leaf_description"]["measurements"]["max_length"][subfolder]
         return float(length_str)
     except KeyError:
-        raise ValueError(f"❌ Could not extract current max_length from {metadata_path}")
+        raise ValueError(f"❌ Could not extract max_length from {metadata_path}")
 
 def run_scan():
     # Step 1: Get selected video path from selector script
@@ -58,21 +63,21 @@ def run_scan():
     out_folder = status_folder / "output"
 
     # Step 3: Set hardcoded remaining length and apply rounding error
-    true_remaining_length = get_current_leaf_length(video_path)  # hardcoded value in inches
+    true_remaining_length = get_current_leaf_length(video_path, status_folder.name)  # hardcoded value in inches
     rounding_precision = 1 / 8
     #rough_remaining_length = noisy_round(true_remaining_length, rounding_precision)
     rough_remaining_length = true_remaining_length
 
     # Step 4: Run LeafScan
-    print(f"
-▶️ Running LeafScan on video: {video_path}")
+    print(f"▶️ Running LeafScan on video: {video_path}")
     print(f"📏 Using rough remaining length: {rough_remaining_length} inches")
     print(f"📁 Output folder: {slices_folder}")
 
     view_config = ViewExtractorConfig()
     separator_config = LeafExtractorConfig()
 
-    view_config.tool_bounds = (np.array([100, 138, 115]), np.array([255, 255, 255]))
+
+    view_config.tool_bounds = (np.array([0, 145, 0]), np.array([255, 255, 255]))
     #view_config.tool_bounds = (np.array([0, 145, 110]), np.array([255, 255, 255]))
     #view_config.tool_bounds = (np.array([0, 145, 105]), np.array([255, 255, 255]))
     #view_config.tool_bounds = (np.array([0, 145, 115]), np.array([255, 255, 255]))
@@ -84,8 +89,12 @@ def run_scan():
     #view_config.tool_bounds = (np.array([50, 138, 105]), np.array([255, 255, 255]))
     #view_config.tool_bounds = (np.array([50, 137, 117]), np.array([255, 255, 255]))
     
-
-    separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 130, 255]))
+    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 135, 255]))
+    #separator_config.leaf_bounds = (np.array([0, 0, 128]), np.array([255, 140, 255]))
+    #separator_config.leaf_bounds = (np.array([0, 0, 130]), np.array([255, 135, 255]))
+    #separator_config.leaf_bounds = (np.array([0, 0, 130]), np.array([255, 130, 255]))
+    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 140, 255]))
+    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 130, 255]))
     #separator_config.leaf_bounds = (np.array([0, 0, 120]), np.array([255, 134, 255]))
     #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 130, 255]))
     #separator_config.leaf_bounds = (np.array([0, 0, 110]), np.array([255, 130, 255]))
@@ -121,8 +130,7 @@ def run_scan():
 
     stitch_images_vertically(slices_folder, stacked_slices_path)
 
-    print(f"
-✅ Scanned Remaining Area: {scanned_area:.2f} square units")
+    print(f"✅ Scanned Remaining Area: {scanned_area:.2f} square units")
 
 if __name__ == "__main__":
     run_scan()

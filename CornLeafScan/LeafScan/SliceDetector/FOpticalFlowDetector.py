@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Created: 2025-03-18
+# Last Modified: 2025-09-22
 
 import os
 import math
@@ -116,7 +116,7 @@ class FOpticalFlowDetector:
             if filtered_flow.size == 0:
                 median_displacement = 0
             else:
-                median_displacement = np.sum(filtered_flow)
+                median_displacement = np.mean(filtered_flow)
 
             self.prev_image = preprocessed
 

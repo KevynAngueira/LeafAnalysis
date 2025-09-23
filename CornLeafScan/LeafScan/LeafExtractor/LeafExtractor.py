@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Created: 2025-03-17
+# Last Modified: 2025-09-22
 
 import cv2
 import numpy as np
@@ -122,10 +122,11 @@ class LeafExtractor:
         #if num_labels > 1:
         #    largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
         #    leaf_mask = np.uint8(labels == largest_label) * 255   
+        #leaf_result = cv2.bitwise_and(preprocessed, preprocessed, mask=leaf_mask)
         
         if display:
                         
-            #debug_img = image.copy()
+            #debug_img = image.copy()s
             #top, bottom, left, right = crop_bounds    
             #cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
 

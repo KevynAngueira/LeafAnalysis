@@ -1,7 +1,0 @@
-{
-    "model": "Linear Regression",
-    "segments": 3,
-    "skip": 1,
-    "mse": 7.813946098698201,
-    "r2": 0.278956054860813
-}

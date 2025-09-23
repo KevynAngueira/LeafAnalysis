@@ -1,0 +1,8 @@
+{
+    "model": "Gradient Boosting",
+    "segments": 5,
+    "mse_train": 17.433056831525747,
+    "r2_train": 0.9787910546354175,
+    "mse_test": 37.611317305821174,
+    "r2_test": 0.9555378597847812
+}

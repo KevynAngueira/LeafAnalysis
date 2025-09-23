@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Last Modified: 2025-09-22
 
 from pathlib import Path
 
@@ -8,8 +8,7 @@ from pathlib import Path
 DATASET_ROOT = Path("/home/icicle/Research Datasets/LeafScan-CornDefoliation2025/Private/LeafScan-CornDefoliation2025-v1/data")
 
 def prompt_selection(prompt_msg, options):
-    print(f"
-{prompt_msg}")
+    print(f"{prompt_msg}")
     for i, opt in enumerate(options):
         print(f"{i+1}: {opt}")
     while True:
@@ -50,8 +49,7 @@ def build_id_map(entries, prefix):
 
 # New prompt function that uses numeric keys
 def prompt_id_selection(prompt_msg, id_map):
-    print(f"
-{prompt_msg}")
+    print(f"{prompt_msg}")
     for id_num, name in sorted(id_map.items()):
         print(f"{id_num}: {name}")
     while True:
@@ -106,8 +104,7 @@ def main():
     selected_video = prompt_selection("🎥 Select a video file:", [f.name for f in video_files])
     selected_video_path = status_path / "media" / selected_video
 
-    print(f"
-✅ Selected video: {selected_video_path}")
+    print(f"✅ Selected video: {selected_video_path}")
     return selected_video_path
 
 if __name__ == "__main__":

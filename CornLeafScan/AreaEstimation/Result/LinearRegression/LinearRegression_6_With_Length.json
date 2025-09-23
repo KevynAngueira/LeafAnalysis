@@ -1,0 +1,8 @@
+{
+    "model": "Linear Regression",
+    "segments": 6,
+    "mse_train": 45.535121830456276,
+    "r2_train": 0.9446022622191365,
+    "mse_test": 51.435507315035835,
+    "r2_test": 0.9391956224322916
+}

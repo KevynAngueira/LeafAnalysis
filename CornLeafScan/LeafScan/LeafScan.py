@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Last Modified: 2025-09-22
 
 import os
 import cv2
@@ -11,7 +11,7 @@ from Misc.ResizeForDisplay import resize_for_display
 from Configs import ViewExtractorConfig, LeafExtractorConfig
 
 from ViewExtractor import ViewExtractor, StabilizedViewExtractor
-from LeafExtractor import LeafExtractor
+from LeafExtractor import LeafExtractor, KmeansLeafExtractor
 from SliceDetector import FOpticalFlowDetector as SliceDetector
 from SliceAreaCalculator import SliceAreaCalculator
 
@@ -29,7 +29,7 @@ class LeafScan:
         self.target_dimensions = leaf_config.target_dimensions
 
         self.viewExtractor = StabilizedViewExtractor(view_config)
-        self.leafExtractor = LeafExtractor(leaf_config)
+        self.leafExtractor = KmeansLeafExtractor(leaf_config)
         self.sliceDetector = SliceDetector()
         self.areaCalculator = SliceAreaCalculator()
 
@@ -43,7 +43,8 @@ class LeafScan:
             #print(self.frame_count)
             #print("Total_Displacement: ", total_displacement)
             cv2.imshow("Frame", resize_for_display(frame))
-            cv2.imshow("View Window", resize_for_display(view_window))
+            
+            cv2.imshow("View Window", view_window)
             cv2.imshow("Visualized Displacement", resize_for_display(vis_displacement))
 
         if out is not None:
@@ -122,7 +123,10 @@ class LeafScan:
 
             if ret:
                 view_window = self.viewExtractor.Extract(frame, display=False, stabilize=False)
-                leaf_result, leaf_mask = self.leafExtractor.Extract(view_window, display=False, stabilize=False)
+                leaf_result, leaf_mask = self.leafExtractor.Extract(view_window, display=False)
+
+                #cv2.imshow(f"View Windoq {slice_idx}", resize_for_display(view_window))
+                #cv2.imshow(f"Slice Index {slice_idx}", resize_for_display(leaf_result))
                 #cv2.waitKey(0)
                 #cv2.destroyAllWindows()
 

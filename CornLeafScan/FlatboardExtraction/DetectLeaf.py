@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Created: 2025-06-25
+# Last Modified: 2025-09-22
 
 import os
 import cv2
@@ -23,8 +23,8 @@ class LeafDetectionConfig:
         30,    # green-ish
         #np.array([128, 128])   # brown-ish
     )
-    target_tolerance: int = 100
-    percent_tolerance: float = 0.02
+    target_tolerance: int = 95
+    percent_tolerance: float = 0.01
 
 class LeafDetector: 
 
@@ -105,6 +105,9 @@ class LeafDetector:
             #rect_area = w*h
 
             solidity = area / total_area
+
+            #print(f"Contour_{idx}: {area} | {solidity}")
+
             if solidity < self.percent_tolerance:
                 #print("Skipping, size")
                 continue
