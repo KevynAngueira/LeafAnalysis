@@ -6,3 +6,4 @@ from .CropAndRotate import cropAndRotate
 from .ResizeForDisplay import resize_for_display
 from .SelectLeafVideo import main as select_video_main
 from .StackImages import stitch_images_vertically
+from .GetLeafRecord import GetLeafRecord

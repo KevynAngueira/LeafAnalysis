@@ -12,7 +12,7 @@ from pathlib import Path
 import LeafScan
 from LeafScan.Configs import ViewExtractorConfig, LeafExtractorConfig
 from LeafScan.Utils import stitch_images_vertically
-from GetLeafModelData import GetLeafModelData
+from LeafScan.Utils.GetLeafModelData import GetLeafModelData
 
 # === Config ===
 MODEL_PATH = "SavedModels/gradient_boosting_model.pkl"
@@ -25,25 +25,6 @@ BASE_DIR = Path("/home/icicle/Research Datasets/LeafScan-CornDefoliation2025")
 def noisy_round(value, precision):
     noise = np.random.uniform(-precision, precision, size=np.shape(value))
     return np.round((value + noise) / precision) * precision
-
-def get_current_leaf_length(video_path: Path, status: str) -> float:
-    """Fetch true remaining/original length from metadata JSON."""
-    leaf_id = next(part.split("_")[1] for part in video_path.parts if part.startswith("leaf_"))
-    metadata_path = video_path.parents[3] / "leaf_metadata.json"
-    if not metadata_path.exists():
-        raise FileNotFoundError(f"❌ Could not find metadata at {metadata_path}")
-
-    with open(metadata_path, "r") as f:
-        leaf_metadata = json.load(f)
-
-    leaf_key = f"leaf_{leaf_id}"
-    if status == "healthy":
-        subfolder = "original"
-    else:
-        subfolder = "simulated"
-
-    length_str = leaf_metadata[leaf_key]["leaf_description"]["measurements"]["max_length"][subfolder]
-    return float(length_str)
 
 def get_all_defoliated_videos():
     """Traverse dataset for all defoliated videos."""
@@ -65,12 +46,6 @@ def append_result(row):
 def main():
     # Load model
     model = joblib.load(MODEL_PATH)
-
-    # Load base widths + original areas (training data source)
-    X_full, y_full = GetLeafModelData(num_base_width_segments=8, skip_segments=0)
-    df_lookup = X_full.copy()
-    df_lookup["Original_Area"] = y_full
-    df_lookup["Leaf_ID"] = range(len(df_lookup))  # NOTE: adjust if IDs are explicit in Excel
 
     # Get all videos
     videos = get_all_defoliated_videos()
