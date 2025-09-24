@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-09-22
-# Last Modified: 2025-09-24
+# Last Modified: 2025-09-22
 
 import cv2
 import numpy as np
@@ -14,10 +14,10 @@ from Configs import LeafExtractorConfig
 
 from BinaryMask import LABMask
 
-from .KmeansLeafExtractor import KmeansLeafExtractor
+from .ContourLeafExtractor import ContourLeafExtractor
 
-class StabilizedLeafExtractor(KmeansLeafExtractor):
-    def __init__(self, config: LeafExtractorConfig=None, alpha: float = 0.2, threshold: int = 200):
+class StabilizedLeafExtractor(ContourLeafExtractor):
+    def __init__(self, config: LeafExtractorConfig=None, alpha: float = 0.1, threshold: int = 200):
         super().__init__(config)
 
         self.prev_ema_mask = None
@@ -29,16 +29,15 @@ class StabilizedLeafExtractor(KmeansLeafExtractor):
         self.prev_leaf = None
         self.current_leaf = None
 
-    def applyStabilization(self, new_frame, new_mask):
-        current_ema_mask = new_mask.astype(np.float32)
+    def applyStabilization(self, new_frame):
+        current_ema_mask = (new_frame > 0).astype(np.float32)
         
         if self.prev_ema_mask is None:
-            self.prev_ema_mask = current_ema_mask.copy()
-            return new_frame, new_mask
+            return new_frame, current_ema_mask
 
         self.prev_ema_mask[:] = (self.alpha * current_ema_mask) + ((1 - self.alpha) * self.prev_ema_mask)
         stabilized_mask = (self.prev_ema_mask >= self.threshold).astype(np.uint8) * 255
-        stabilized_frame = cv2.bitwise_and(new_frame, new_frame, mask=stabilized_mask)
+        stabilized_frame = cv2.bitwise_and(new_frame, stabilized_mask)
         
         return stabilized_frame, stabilized_mask
 
@@ -46,12 +45,6 @@ class StabilizedLeafExtractor(KmeansLeafExtractor):
         leaf_result, leaf_mask = super().Extract(image, display, deep_display)
 
         if stabilize:
-            stabilized_result, stabilized_mask = self.applyStabilization(leaf_result, leaf_mask)
-        else:
-            stabilized_result, stabilized_mask = leaf_result, leaf_mask
-
-        if display:
-            cv2.imshow("Stabilized", resize_for_display(stabilized_result))
-            cv2.imshow("Difference", resize_for_display(cv2.absdiff(leaf_mask, stabilized_mask)))
+            leaf_result, leaf_mask = self.applyStabilization(leaf_result)
         
-        return stabilized_result, stabilized_mask
+        return leaf_result, leaf_mask

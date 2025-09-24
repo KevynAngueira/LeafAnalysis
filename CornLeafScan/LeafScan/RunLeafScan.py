@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-08-20
-# Last Modified: 2025-09-22
+# Last Modified: 2025-09-24
 
 import json
 import shutil
@@ -76,39 +76,9 @@ def run_scan():
     view_config = ViewExtractorConfig()
     separator_config = LeafExtractorConfig()
 
-
     view_config.tool_bounds = (np.array([0, 145, 0]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 145, 110]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 145, 105]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 145, 115]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 138, 115]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 138, 110]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 138, 120]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 138, 124]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([0, 140, 115]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([50, 138, 105]), np.array([255, 255, 255]))
-    #view_config.tool_bounds = (np.array([50, 137, 117]), np.array([255, 255, 255]))
     
-    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 135, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 128]), np.array([255, 140, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 130]), np.array([255, 135, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 130]), np.array([255, 130, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 140, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 130, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 120]), np.array([255, 134, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 126]), np.array([255, 130, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 110]), np.array([255, 130, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 128]), np.array([255, 140, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 125]), np.array([255, 136, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 120]), np.array([255, 130, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 125]), np.array([255, 145, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 120]), np.array([255, 132, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 125]), np.array([255, 132, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 128]), np.array([255, 140, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 110]), np.array([255, 128, 255]))    
-    #separator_config.leaf_bounds = (np.array([0, 0, 120]), np.array([255, 130, 255]))
-    #separator_config.leaf_bounds = (np.array([0, 0, 120]), np.array([255, 135, 255]))
-
+    
     leaf_scan = LeafScan(
         view_config=view_config,
         leaf_config=separator_config,

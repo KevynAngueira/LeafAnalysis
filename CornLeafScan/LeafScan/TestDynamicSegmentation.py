@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-09-22
-# Last Modified: 2025-09-22
+# Last Modified: 2025-09-24
 
 import cv2
 from LeafExtractor import KmeansLeafExtractor
@@ -14,7 +14,7 @@ print(original.shape)
 
 leafExtractor = KmeansLeafExtractor()
 
-isolated_leaf = leafExtractor.Extract(original, display=True)
+isolated_leaf = leafExtractor.Extract(original, display=True, deep_display=True)
 
 cv2.imshow("Original", resize_for_display(original))
 cv2.waitKey(0)
