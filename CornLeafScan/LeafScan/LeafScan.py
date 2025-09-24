@@ -6,14 +6,14 @@ import os
 import cv2
 import numpy as np
 
-from Misc.ResizeForDisplay import resize_for_display
+from LeafScan.Utils import resize_for_display
 
-from Configs import ViewExtractorConfig, LeafExtractorConfig
+from LeafScan.Configs import ViewExtractorConfig, LeafExtractorConfig
 
-from ViewExtractor import ViewExtractor, StabilizedViewExtractor
-from LeafExtractor import LeafExtractor, KmeansLeafExtractor, StabilizedLeafExtractor
-from SliceDetector import FOpticalFlowDetector as SliceDetector
-from SliceAreaCalculator import SliceAreaCalculator
+from LeafScan.Core.ViewExtractor import ViewExtractor, StabilizedViewExtractor
+from LeafScan.Core.LeafExtractor import LeafExtractor, KmeansLeafExtractor, StabilizedLeafExtractor
+from LeafScan.Core.SliceDetector import FOpticalFlowDetector as SliceDetector
+from LeafScan.Core.SliceAreaCalculator import SliceAreaCalculator
 
 class LeafScan:
     def __init__(self, view_config: ViewExtractorConfig = None, leaf_config: LeafExtractorConfig = None, output_folder=None, display=False, deep_display=False):
