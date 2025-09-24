@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-08-20
-# Last Modified: 2025-09-22
+# Last Modified: 2025-09-24
 
 import os
 import cv2
@@ -11,7 +11,7 @@ from Misc.ResizeForDisplay import resize_for_display
 from Configs import ViewExtractorConfig, LeafExtractorConfig
 
 from ViewExtractor import ViewExtractor, StabilizedViewExtractor
-from LeafExtractor import LeafExtractor, KmeansLeafExtractor
+from LeafExtractor import LeafExtractor, KmeansLeafExtractor, StabilizedLeafExtractor
 from SliceDetector import FOpticalFlowDetector as SliceDetector
 from SliceAreaCalculator import SliceAreaCalculator
 
@@ -29,7 +29,7 @@ class LeafScan:
         self.target_dimensions = leaf_config.target_dimensions
 
         self.viewExtractor = StabilizedViewExtractor(view_config)
-        self.leafExtractor = KmeansLeafExtractor(leaf_config)
+        self.leafExtractor = StabilizedLeafExtractor(leaf_config)
         self.sliceDetector = SliceDetector()
         self.areaCalculator = SliceAreaCalculator()
 
@@ -123,7 +123,7 @@ class LeafScan:
 
             if ret:
                 view_window = self.viewExtractor.Extract(frame, display=False, stabilize=False)
-                leaf_result, leaf_mask = self.leafExtractor.Extract(view_window, display=False)
+                leaf_result, leaf_mask = self.leafExtractor.Extract(view_window, display=False, stabilize=False)
 
                 #cv2.imshow(f"View Windoq {slice_idx}", resize_for_display(view_window))
                 #cv2.imshow(f"Slice Index {slice_idx}", resize_for_display(leaf_result))

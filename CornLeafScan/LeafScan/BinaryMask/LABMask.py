@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
-# Created: 2025-08-20
-# Last Modified: 2025-08-20
+# Created: 2025-03-25
+# Last Modified: 2025-09-24
 
 
 import cv2
@@ -15,7 +15,6 @@ class LABMask:
         Applying preprocessing to image
             CIE LAB -> Convert from BGR to CIE LAB
         """
-        
         lab = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
         
         return lab
