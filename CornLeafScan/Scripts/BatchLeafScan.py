@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-09-24
-# Last Modified: 2025-09-24
+# Last Modified: 2025-09-26
 
 import json
 import joblib
@@ -9,26 +9,68 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-import LeafScan
+from LeafScan import LeafScan
 from LeafScan.Configs import ViewExtractorConfig, LeafExtractorConfig
 from LeafScan.Utils import stitch_images_vertically
-from LeafScan.Utils.GetLeafModelData import GetLeafModelData
+from LeafScan.Utils.GetLeafRecord import GetLeafRecord
 
 # === Config ===
-MODEL_PATH = "SavedModels/gradient_boosting_model.pkl"
-RESULTS_FILE = "batch_defoliation_results.csv"
-PROGRESS_FILE = "progress.txt"
+MODEL_PATH = "LeafScan/Models/gradient_boosting_model.pkl"
+RESULTS_FILE = "Results/batch_defoliation_results.csv"
+PROGRESS_FILE = "Resultsprogress.txt"
 
-BASE_DIR = Path("/home/icicle/Research Datasets/LeafScan-CornDefoliation2025")
+BASE_DIR = Path("/home/icicle/Research Datasets/LeafScan-CornDefoliation2025/Private/LeafScan-CornDefoliation2025-v1/data/")
 
 # === Utilities ===
 def noisy_round(value, precision):
     noise = np.random.uniform(-precision, precision, size=np.shape(value))
     return np.round((value + noise) / precision) * precision
 
+def get_current_leaf_length(video_path: Path, status: str) -> float:
+    """
+    Parses field, plant, and leaf IDs from video path and loads corresponding leaf_metadata.json.
+    """
+    # Example: .../field_02/plant_00/leaf_07/defoliated/media/vid_dm_02_00_07_001.mp4
+    parts = video_path.parts
+
+    leaf_id = next(part.split("_")[1] for part in parts if part.startswith("leaf_"))
+
+    metadata_path = video_path.parents[3] / "leaf_metadata.json"  # 3 levels up from media
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"❌ Could not find metadata at {metadata_path}")
+
+    with open(metadata_path, "r") as f:
+        leaf_metadata = json.load(f)
+
+    leaf_key = f"leaf_{leaf_id}"
+    try:
+        if status == "healthy":
+            subfolder = "original"
+        else:
+            subfolder = "simulated"
+
+        length_str = leaf_metadata[leaf_key]["leaf_description"]["measurements"]["max_length"][subfolder]
+        return float(length_str)
+    except KeyError:
+        raise ValueError(f"❌ Could not extract max_length from {metadata_path}")
+
 def get_all_defoliated_videos():
     """Traverse dataset for all defoliated videos."""
-    return sorted(BASE_DIR.glob("field_*/plant_*/leaf_*/defoliated/media/*.mp4"))
+    return sorted(BASE_DIR.glob("field_*/plant_*/leaf_*/simulated/media/*.mp4"))
+
+def prompt_resume_options():
+    print("🔁 Previous progress detected.")
+    print("1: Resume from where left off")
+    print("2: Restart from scratch")
+    print("3: Start from custom index")
+    while True:
+        try:
+            choice = int(input("Select an option: "))
+            if choice in [1, 2, 3]:
+                return choice
+        except ValueError:
+            pass
+        print("Invalid choice. Try again.")
 
 def load_progress():
     if Path(PROGRESS_FILE).exists():
@@ -53,7 +95,24 @@ def main():
         print("❌ No defoliated videos found.")
         return
 
-    start_index = load_progress()
+    start_index = 0
+    if Path(PROGRESS_FILE).exists():
+        choice = prompt_resume_options()
+        if choice == 1:  # Resume
+            start_index = load_progress()
+        elif choice == 2:  # Restart
+            save_progress(0)
+            start_index = 0
+        elif choice == 3:  # Custom index
+            while True:
+                try:
+                    start_index = int(input(f"Enter custom start index (0–{len(videos)-1}): "))
+                    if 0 <= start_index < len(videos):
+                        break
+                except ValueError:
+                    pass
+                print("Invalid index. Try again.")
+
     print(f"▶️ Resuming at index {start_index}")
 
     for i, video_path in enumerate(videos[start_index:], start=start_index):
@@ -61,11 +120,23 @@ def main():
             print(f"\n📹 [{i+1}/{len(videos)}] Processing {video_path}")
 
             media_folder = video_path.parent  # .../media/
-            status_folder = media_folder.parent  # .../defoliated/
+            status_folder = media_folder.parent  # .../simulated/
             out_folder = status_folder / "output"
             out_folder.mkdir(parents=True, exist_ok=True)
 
-            # True remaining length
+            # Parse entry IDs from filename
+            # Example: vid_sm_02_00_07_001.mp4 → ["vid", "sm", "02", "00", "07", "001"]
+            parts = video_path.stem.split("_")
+            _, _, f_id, p_id, l_id, m_id = parts
+
+            # Get entry record
+            params, metrics = GetLeafRecord(f_id, p_id, l_id)
+            true_original_area, true_remaining_area, true_defoliation = metrics
+
+            # Estimate original area
+            pred_original_area = model.predict(params)[0]
+
+            # Get current leaf length
             true_remaining_length = get_current_leaf_length(video_path, status_folder.name)
             rough_remaining_length = noisy_round(true_remaining_length, 1/8)
 
@@ -86,33 +157,35 @@ def main():
                 display=False
             )
 
-            video_output_path = out_folder / video_path.name
+            # Adjust output paths (_sm_ → _so_)
+            video_output_path = out_folder / video_path.name.replace("_sm_", "_so_")
             stacked_slices_path = video_output_path.with_suffix(".jpg")
 
-            calculated_remaining_area = leaf_scan.scanVideo(
+            pred_remaining_area = leaf_scan.scanVideo(
                 remaining_leaf_length=rough_remaining_length,
                 video_path=str(video_path),
                 output_path=str(video_output_path)
             )
             stitch_images_vertically(slices_folder, stacked_slices_path)
 
-            # Predict original area using widths + length (from Excel dataset features)
-            # NOTE: you’ll need a reliable mapping between this video’s leaf and the Excel row
-            # Here I just grab the "mean row" as placeholder
-            # Replace with actual ID-based lookup if available
-            widths = X_full.iloc[0].drop("Length").values  # placeholder widths
-            length = rough_remaining_length
-            X_pred = pd.DataFrame([list(widths) + [length]], columns=X_full.columns)
-            estimated_original_area = model.predict(X_pred)[0]
-
-            estimated_defoliation = (1 - calculated_remaining_area / estimated_original_area) * 100
+            # Calculate defoliation (%)
+            pred_defoliation = (1 - pred_remaining_area / pred_original_area) * 100
 
             row = {
-                "video": str(video_path),
-                "estimated_original_area": estimated_original_area,
-                "calculated_remaining_area": calculated_remaining_area,
-                "estimated_defoliation": estimated_defoliation,
-                "true_remaining_length": true_remaining_length
+                "Field_ID": f_id,
+                "Plant_ID": p_id,
+                "Leaf_ID": l_id,
+                "Media_ID": m_id,
+                "Is_Defoliated": 1,
+
+                "pred_original_area": pred_original_area,
+                "true_original_area": true_original_area,
+
+                "pred_remaining_area": pred_remaining_area,
+                "true_remaining_area": true_remaining_area,
+
+                "pred_defoliation": pred_defoliation,
+                "true_defoliation": true_defoliation,
             }
             append_result(row)
             save_progress(i + 1)

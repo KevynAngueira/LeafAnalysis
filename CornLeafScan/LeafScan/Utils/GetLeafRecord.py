@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-09-24
-# Last Modified: 2025-09-24
+# Last Modified: 2025-09-26
 
 import pandas as pd
 
@@ -51,7 +51,7 @@ def GetLeafRecord(f_id, p_id, l_id, skip_segments=0, num_widths= 8, summary_path
     selected_widths = width_cols[skip_segments: skip_segments + num_widths]
 
     # Build X and y
-    X = row[selected_widths + ["Length"]].to_frame().T  # keep DataFrame shape
-    y = pd.Series([row["Original_Area"]])
+    params = row[selected_widths + ["Length"]].to_frame().T  # keep DataFrame shape
+    metrics = pd.Series([row["Original_Area"], row["Remaining_Area"], row["Defoliation"]])
 
-    return X, y
+    return params, metrics

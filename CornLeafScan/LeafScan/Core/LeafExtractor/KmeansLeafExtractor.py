@@ -1,6 +1,6 @@
 # Author: Kevyn Angueira Irizarry
 # Created: 2025-09-22
-# Last Modified: 2025-09-24
+# Last Modified: 2025-09-26
 
 import cv2
 import numpy as np
@@ -257,20 +257,20 @@ class KmeansLeafExtractor:
 
     def Extract(self, image, display=False, deep_display=False):
         
-        with timer("Preprocessing"):
-            #preprocessed = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-            preprocessed = self._imagePreprocessing(image)
+        #with timer("Preprocessing"):
+        #preprocessed = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        preprocessed = self._imagePreprocessing(image)
 
         
-        with timer("KMeans Clustering"):
-            labels, centroids = self._clusterImage(preprocessed)
+        #with timer("KMeans Clustering"):
+        labels, centroids = self._clusterImage(preprocessed)
         
         if self._checkLeafExists(centroids):
-            with timer("Assign Clusters"):
-                leaf_cluster, back_cluster, border_cluster = self._assignClusters(image, labels, centroids)
+            #with timer("Assign Clusters"):
+            leaf_cluster, back_cluster, border_cluster = self._assignClusters(image, labels, centroids)
             
-            with timer("Segement"):
-                leaf_result, leaf_mask = self._segmentLeaf(image, leaf_cluster, labels)
+            #with timer("Segement"):
+            leaf_result, leaf_mask = self._segmentLeaf(image, leaf_cluster, labels)
 
             if display:
                 visualized_clusters = self._visualizeClusters(image, labels)
@@ -279,9 +279,9 @@ class KmeansLeafExtractor:
             leaf_result = np.zeros(image.shape, np.uint8)
             leaf_mask = np.zeros(image.shape[:2], np.uint8)
 
-        with timer("Crop"):
-                leaf_result = self._cropBorder(leaf_result, self.padding)
-                leaf_mask = self._cropBorder(leaf_mask, self.padding)
+        #with timer("Crop"):
+        leaf_result = self._cropBorder(leaf_result, self.padding)
+        leaf_mask = self._cropBorder(leaf_mask, self.padding)
 
         if display:
             cv2.imshow("Leaf Mask", resize_for_display(leaf_mask))
